@@ -1,65 +1,208 @@
-import Image from "next/image";
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+  // login
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [session, setSession] = useState(null)
+
+  // form movimentação
+  const [item, setItem] = useState('')
+  const [lote, setLote] = useState('')
+  const [caixas, setCaixas] = useState('')
+  const [qtdPorCaixa, setQtdPorCaixa] = useState('')
+  const [unidadesAvulsas, setUnidadesAvulsas] = useState('0')
+
+  const caixasInt = parseInt(caixas || '0', 10)
+  const qtdPorCaixaInt = parseInt(qtdPorCaixa || '0', 10)
+  const unidadesAvulsasInt = parseInt(unidadesAvulsas || '0', 10)
+
+  const totalUnidades =
+    (Number.isNaN(caixasInt) ? 0 : caixasInt) *
+      (Number.isNaN(qtdPorCaixaInt) ? 0 : qtdPorCaixaInt) +
+    (Number.isNaN(unidadesAvulsasInt) ? 0 : unidadesAvulsasInt)
+
+
+  // carrega sessão atual (se já estiver logado)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session ?? null)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession)
+      }
+    )
+
+    return () => {
+      listener.subscription.unsubscribe()
+    }
+  }, [])
+
+  async function handleLogin() {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    console.log('LOGIN DATA:', data)
+    console.log('LOGIN ERROR:', error)
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+  }
+
+  async function handleSalvarMovimentacao() {
+    // 1) pegar usuário logado
+    const { data: sessionData } = await supabase.auth.getSession()
+    const userId = sessionData.session?.user?.id
+
+    if (!userId) {
+      alert('Você precisa estar logado.')
+      return
+    }
+
+    // 2) validar campos
+    if (!item || !lote) {
+      alert('Preencha item e lote.')
+      return
+    }
+
+    if (totalUnidades <= 0) {
+      alert('Informe caixas e quantidade por caixa (e/ou unidades avulsas). O total deve ser maior que zero.')
+      return
+    }
+
+    // 3) inserir no banco
+    const { data, error } = await supabase.from('movimentacoes').insert([
+      {
+      item,
+      lote,
+      qtd_informada: totalUnidades,
+      caixas: caixasInt,
+      qtd_por_caixa: qtdPorCaixaInt,
+      unidades_avulsas: unidadesAvulsasInt,
+      status: 'PENDENTE',
+      criado_por: userId,
+    },
+    ])
+
+    console.log('INSERT DATA:', data)
+    console.log('INSERT ERROR:', error)
+
+    if (error) {
+      alert('Erro ao salvar movimentação. Veja o console.')
+      return
+    }
+
+    alert('Movimentação salva com sucesso!')
+
+    // 4) limpar formulário
+    setItem('')
+    setLote('')
+    setCaixas('')
+    setQtdPorCaixa('')
+    setUnidadesAvulsas('0')
+
+  }
+
+  // Se não está logado, mostra tela de login
+  if (!session) {
+    return (
+      <div style={{ padding: 40, maxWidth: 420 }}>
+        <h1>Login</h1>
+
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{ display: 'block', marginBottom: 10, width: '100%' }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+        <input
+          type="password"
+          placeholder="Senha"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={{ display: 'block', marginBottom: 10, width: '100%' }}
+        />
+
+        <button onClick={handleLogin} style={{ width: '100%' }}>
+          Entrar
+        </button>
+      </div>
+    )
+  }
+
+  // Se está logado, mostra formulário de movimentação
+  return (
+    <div style={{ padding: 40, maxWidth: 520 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <h1>Registrar Movimentação</h1>
+        <button onClick={handleLogout}>Sair</button>
+      </div>
+
+      <p style={{ marginTop: 0, opacity: 0.7 }}>
+        Status inicial será <b>PENDENTE</b>.
+      </p>
+
+      <label>Item</label>
+      <input
+        value={item}
+        onChange={(e) => setItem(e.target.value)}
+        placeholder="Ex: Item X"
+        style={{ display: 'block', marginBottom: 10, width: '100%' }}
+      />
+
+      <label>Lote</label>
+      <input
+        value={lote}
+        onChange={(e) => setLote(e.target.value)}
+        placeholder="Ex: Lote Y"
+        style={{ display: 'block', marginBottom: 10, width: '100%' }}
+      />
+
+      <label>Caixas</label>
+      <input
+        value={caixas}
+        onChange={(e) => setCaixas(e.target.value)}
+        placeholder="Ex: 4"
+        inputMode="numeric"
+        style={{ display: 'block', marginBottom: 10, width: '100%' }}
+      />
+
+      <label>Quantidade por caixa</label>
+      <input
+        value={qtdPorCaixa}
+        onChange={(e) => setQtdPorCaixa(e.target.value)}
+        placeholder="Ex: 12"
+        inputMode="numeric"
+        style={{ display: 'block', marginBottom: 10, width: '100%' }}
+      />
+
+      <label>Unidades avulsas (opcional)</label>
+      <input
+        value={unidadesAvulsas}
+        onChange={(e) => setUnidadesAvulsas(e.target.value)}
+        placeholder="Ex: 3"
+        inputMode="numeric"
+        style={{ display: 'block', marginBottom: 10, width: '100%' }}
+      />
+
+      <p style={{ marginTop: 0, opacity: 0.8 }}>
+        <b>Total em unidades:</b> {totalUnidades}
+      </p>
+
+
+      <button onClick={handleSalvarMovimentacao} style={{ width: '100%' }}>
+        Salvar movimentação
+      </button>
     </div>
-  );
+  )
 }
