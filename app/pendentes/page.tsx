@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
+import Menu from '../../components/menu'
+import StatusBadge from '../../components/statusbadge'
 
 
 type Mov = {
@@ -70,56 +72,66 @@ export default function PendentesPage() {
 
 
   return (
-    <div style={{ padding: 40, maxWidth: 900 }}>
-      <h1>Pendentes</h1>
+    <div>
+      <Menu />
+      <div className="container">
+        <div className="card">  
+          <h1>Pendentes</h1>
 
-      <button onClick={carregarPendentes} style={{ marginBottom: 16 }}>
-        Atualizar
-      </button>
+          <button className="btn" onClick={carregarPendentes} style={{ marginBottom: 16 }}>
+            Atualizar
+          </button>
 
-      {loading && <p>Carregando...</p>}
+          {loading && <p>Carregando...</p>}
 
-      {!loading && lista.length === 0 && <p>Nenhuma pendência.</p>}
+          {!loading && lista.length === 0 && <p>Nenhuma pendência.</p>}
 
-      {!loading && lista.length > 0 && (
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-          }}
-        >
-          <thead>
-            <tr>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
-                Item
-              </th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
-                Lote
-              </th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
-                Total (un)
-              </th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
-                Criado em
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {lista.map((m) => (
-              <tr
-                key={m.id}
-                style={{ cursor: 'pointer' }}
-                onClick={() => (window.location.href = `/conferir/${m.id}`)}
-                >
-                <td style={{ padding: '8px 0' }}>{m.item}</td>
-                <td>{m.lote}</td>
-                <td>{m.qtd_informada}</td>
-                <td>{new Date(m.criado_em).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+          {!loading && lista.length > 0 && (
+            <table 
+              className="table"
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+              }}
+            >
+              <thead>
+                <tr>
+                  <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
+                    Item
+                  </th>
+                  <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
+                    Lote
+                  </th>
+                  <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
+                    Total (un)
+                  </th>
+                  <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
+                    Status
+                  </th>
+                  <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
+                    Criado em
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.map((m) => (
+                  <tr
+                    key={m.id}
+                    className="row-clickable"
+                    onClick={() => router.push(`/conferir/${m.id}`)}
+                    >
+                    <td style={{ padding: '8px 0' }}>{m.item}</td>
+                    <td>{m.lote}</td>
+                    <td>{m.qtd_informada}</td>
+                    <td><StatusBadge status={m.status} /></td>
+                    <td>{new Date(m.criado_em).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+  </div>
   )
 }

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import Menu from '../components/menu'
+
 
 export default function Home() {
   // login
@@ -114,95 +116,104 @@ export default function Home() {
   // Se não está logado, mostra tela de login
   if (!session) {
     return (
-      <div style={{ padding: 40, maxWidth: 420 }}>
-        <h1>Login</h1>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ display: 'block', marginBottom: 10, width: '100%' }}
-        />
+      <div className="container">
+        <div className="card">
+          <h1>Login</h1>
 
-        <input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ display: 'block', marginBottom: 10, width: '100%' }}
-        />
+          <input 
+            className="input"
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+          />
 
-        <button onClick={handleLogin} style={{ width: '100%' }}>
-          Entrar
-        </button>
+          <input
+            type="password"
+            placeholder="Senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+          />
+
+          <button className="btn" onClick={handleLogin} style={{ width: '100%' }}>
+            Entrar
+          </button>
+        </div>
       </div>
     )
   }
 
   // Se está logado, mostra formulário de movimentação
   return (
-    <div style={{ padding: 40, maxWidth: 520 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <h1>Registrar Movimentação</h1>
-        <button onClick={handleLogout}>Sair</button>
+
+    <div>
+      <Menu /> 
+        <div className="container">
+          <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <h1>Registrar Movimentação</h1>
+          </div>
+
+          <p style={{ marginTop: 0, opacity: 0.7 }}>
+            Status inicial será <b>PENDENTE</b>.
+          </p>
+
+          <label>Item</label>
+          <input
+            value={item}
+            onChange={(e) => setItem(e.target.value)}
+            placeholder="Ex: Item X"
+            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+          />
+
+          <label>Lote</label>
+          <input
+            value={lote}
+            onChange={(e) => setLote(e.target.value)}
+            placeholder="Ex: Lote Y"
+            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+          />
+
+          <label>Caixas</label>
+          <input
+            value={caixas}
+            onChange={(e) => setCaixas(e.target.value)}
+            placeholder="Ex: 4"
+            inputMode="numeric"
+            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+          />
+
+          <label>Quantidade por caixa</label>
+          <input
+            value={qtdPorCaixa}
+            onChange={(e) => setQtdPorCaixa(e.target.value)}
+            placeholder="Ex: 12"
+            inputMode="numeric"
+            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+          />
+
+          <label>Unidades avulsas (opcional)</label>
+          <input
+            value={unidadesAvulsas}
+            onChange={(e) => setUnidadesAvulsas(e.target.value)}
+            placeholder="Ex: 3"
+            inputMode="numeric"
+            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+          />
+
+          <p style={{ marginTop: 0, opacity: 0.8 }}>
+            <b>Total em unidades:</b> {totalUnidades}
+          </p>
+
+
+          <button onClick={handleSalvarMovimentacao} style={{ width: '100%' }}>
+            Salvar movimentação
+          </button>
+        </div>
       </div>
-
-      <p style={{ marginTop: 0, opacity: 0.7 }}>
-        Status inicial será <b>PENDENTE</b>.
-      </p>
-
-      <label>Item</label>
-      <input
-        value={item}
-        onChange={(e) => setItem(e.target.value)}
-        placeholder="Ex: Item X"
-        style={{ display: 'block', marginBottom: 10, width: '100%' }}
-      />
-
-      <label>Lote</label>
-      <input
-        value={lote}
-        onChange={(e) => setLote(e.target.value)}
-        placeholder="Ex: Lote Y"
-        style={{ display: 'block', marginBottom: 10, width: '100%' }}
-      />
-
-      <label>Caixas</label>
-      <input
-        value={caixas}
-        onChange={(e) => setCaixas(e.target.value)}
-        placeholder="Ex: 4"
-        inputMode="numeric"
-        style={{ display: 'block', marginBottom: 10, width: '100%' }}
-      />
-
-      <label>Quantidade por caixa</label>
-      <input
-        value={qtdPorCaixa}
-        onChange={(e) => setQtdPorCaixa(e.target.value)}
-        placeholder="Ex: 12"
-        inputMode="numeric"
-        style={{ display: 'block', marginBottom: 10, width: '100%' }}
-      />
-
-      <label>Unidades avulsas (opcional)</label>
-      <input
-        value={unidadesAvulsas}
-        onChange={(e) => setUnidadesAvulsas(e.target.value)}
-        placeholder="Ex: 3"
-        inputMode="numeric"
-        style={{ display: 'block', marginBottom: 10, width: '100%' }}
-      />
-
-      <p style={{ marginTop: 0, opacity: 0.8 }}>
-        <b>Total em unidades:</b> {totalUnidades}
-      </p>
-
-
-      <button onClick={handleSalvarMovimentacao} style={{ width: '100%' }}>
-        Salvar movimentação
-      </button>
-    </div>
+  </div>
   )
 }

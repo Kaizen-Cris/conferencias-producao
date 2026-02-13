@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import { getMyRole } from '../../../lib/auth'
+import Menu from '../../../components/menu'
+
 
 
 type Mov = {
@@ -164,35 +166,38 @@ export default function ConferirPage() {
   if (!mov) return <div style={{ padding: 40 }}>Movimentação não encontrada.</div>
 
   return (
-    <div style={{ padding: 40, maxWidth: 520 }}>
-      <h1>Conferir</h1>
+    <div>
+      <Menu />
+      <div style={{ padding: 40, maxWidth: 520 }}>
+        <h1>Conferir</h1>
 
-      <div style={{ padding: 12, border: '1px solid #ddd', marginBottom: 16 }}>
-        <div><b>Item:</b> {mov.item}</div>
-        <div><b>Lote:</b> {mov.lote}</div>
-        <div><b>Informado:</b> {mov.qtd_informada} unidades</div>
-        <div><b>Status:</b> {mov.status}</div>
+        <div style={{ padding: 12, border: '1px solid #ddd', marginBottom: 16 }}>
+          <div><b>Item:</b> {mov.item}</div>
+          <div><b>Lote:</b> {mov.lote}</div>
+          <div><b>Informado:</b> {mov.qtd_informada} unidades</div>
+          <div><b>Status:</b> {mov.status}</div>
+        </div>
+
+        <label>Quantidade conferida (unidades)</label>
+        <input
+          value={qtdConferida}
+          onChange={(e) => setQtdConferida(e.target.value)}
+          placeholder="Ex: 23"
+          inputMode="numeric"
+          style={{ display: 'block', marginBottom: 16, width: '100%' }}
+        />
+
+        <button onClick={confirmar} style={{ width: '100%' }}>
+          Confirmar conferência
+        </button>
+
+        <button
+          onClick={() => router.push('/pendentes')}
+          style={{ width: '100%', marginTop: 10 }}
+        >
+          Voltar
+        </button>
       </div>
-
-      <label>Quantidade conferida (unidades)</label>
-      <input
-        value={qtdConferida}
-        onChange={(e) => setQtdConferida(e.target.value)}
-        placeholder="Ex: 23"
-        inputMode="numeric"
-        style={{ display: 'block', marginBottom: 16, width: '100%' }}
-      />
-
-      <button onClick={confirmar} style={{ width: '100%' }}>
-        Confirmar conferência
-      </button>
-
-      <button
-        onClick={() => router.push('/pendentes')}
-        style={{ width: '100%', marginTop: 10 }}
-      >
-        Voltar
-      </button>
     </div>
   )
 }

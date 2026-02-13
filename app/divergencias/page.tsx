@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
+import Menu from '../../components/menu'  
 
 
 type Mov = {
@@ -68,46 +69,49 @@ export default function DivergenciasPage() {
   }
 
   return (
-    <div style={{ padding: 40, maxWidth: 900 }}>
-      <h1>Divergências</h1>
+    <div>
+      <Menu />
+      <div style={{ padding: 40, maxWidth: 900 }}>
+        <h1>Divergências</h1>
 
-      <button onClick={carregar} style={{ marginBottom: 16 }}>
-        Atualizar
-      </button>
+        <button onClick={carregar} style={{ marginBottom: 16 }}>
+          Atualizar
+        </button>
 
-      {loading && <p>Carregando...</p>}
-      {!loading && lista.length === 0 && <p>Nenhuma divergência.</p>}
+        {loading && <p>Carregando...</p>}
+        {!loading && lista.length === 0 && <p>Nenhuma divergência.</p>}
 
-      {!loading && lista.length > 0 && (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Item</th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Lote</th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Informado (un)</th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Criado em</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lista.map((m) => (
-              <tr
-                key={m.id}
-                style={{ cursor: 'pointer' }}
-                onClick={() => router.push(`/ajustar/${m.id}`)}
-              >
-                <td style={{ padding: '8px 0' }}>{m.item}</td>
-                <td>{m.lote}</td>
-                <td>{m.qtd_informada}</td>
-                <td>{new Date(m.criado_em).toLocaleString()}</td>
+        {!loading && lista.length > 0 && (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Item</th>
+                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Lote</th>
+                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Informado (un)</th>
+                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Criado em</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+            </thead>
+            <tbody>
+              {lista.map((m) => (
+                <tr
+                  key={m.id}
+                  className="row-clickable"
+                  onClick={() => router.push(`/ajustar/${m.id}`)}
+                >
+                  <td style={{ padding: '8px 0' }}>{m.item}</td>
+                  <td>{m.lote}</td>
+                  <td>{m.qtd_informada}</td>
+                  <td>{new Date(m.criado_em).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
-      <div style={{ marginTop: 16 }}>
-        <button onClick={() => router.push('/pendentes')}>Ir para Pendentes</button>
+        <div style={{ marginTop: 16 }}>
+          <button onClick={() => router.push('/pendentes')}>Ir para Pendentes</button>
+        </div>
       </div>
-    </div>
+    </div>    
   )
 }

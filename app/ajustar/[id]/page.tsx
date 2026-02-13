@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import { getMyRole } from '../../../lib/auth'
+import Menu from '../../../components/menu'
 
 
 type Mov = {
@@ -184,65 +185,68 @@ export default function AjustarPage() {
   if (!mov) return <div style={{ padding: 40 }}>Movimentação não encontrada.</div>
 
   return (
-    <div style={{ padding: 40, maxWidth: 520 }}>
-      <h1>Ajustar Divergência</h1>
+    <div>
+      <Menu />
+      <div style={{ padding: 40, maxWidth: 520 }}>
+        <h1>Ajustar Divergência</h1>
 
-      <div style={{ padding: 12, border: '1px solid #ddd', marginBottom: 16 }}>
-        <div><b>Item:</b> {mov.item}</div>
-        <div><b>Lote:</b> {mov.lote}</div>
-        <div><b>Informado atual:</b> {mov.qtd_informada} unidades</div>
-        <div><b>Status:</b> {mov.status}</div>
+        <div style={{ padding: 12, border: '1px solid #ddd', marginBottom: 16 }}>
+          <div><b>Item:</b> {mov.item}</div>
+          <div><b>Lote:</b> {mov.lote}</div>
+          <div><b>Informado atual:</b> {mov.qtd_informada} unidades</div>
+          <div><b>Status:</b> {mov.status}</div>
+        </div>
+
+        <label>Caixas</label>
+        <input
+          value={caixas}
+          onChange={(e) => setCaixas(e.target.value)}
+          placeholder="Ex: 2"
+          inputMode="numeric"
+          style={{ display: 'block', marginBottom: 10, width: '100%' }}
+        />
+
+        <label>Quantidade por caixa</label>
+        <input
+          value={qtdPorCaixa}
+          onChange={(e) => setQtdPorCaixa(e.target.value)}
+          placeholder="Ex: 10"
+          inputMode="numeric"
+          style={{ display: 'block', marginBottom: 10, width: '100%' }}
+        />
+
+        <label>Unidades avulsas</label>
+        <input
+          value={avulsas}
+          onChange={(e) => setAvulsas(e.target.value)}
+          placeholder="Ex: 3"
+          inputMode="numeric"
+          style={{ display: 'block', marginBottom: 10, width: '100%' }}
+        />
+
+        <p style={{ marginTop: 0, opacity: 0.85 }}>
+          <b>Total em unidades:</b> {totalUnidades}
+        </p>
+
+        <label>Motivo do ajuste (obrigatório)</label>
+        <textarea
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          placeholder="Ex: conferência anterior digitada incorretamente / caixa incompleta / etc."
+          style={{ display: 'block', marginBottom: 16, width: '100%', minHeight: 80 }}
+        />
+
+        <button onClick={salvarAjuste} style={{ width: '100%' }}>
+          Salvar ajuste
+        </button>
+
+        <button
+          onClick={() => router.push('/divergencias')}
+          style={{ width: '100%', marginTop: 10 }}
+        >
+          Voltar
+        </button>
       </div>
-
-      <label>Caixas</label>
-      <input
-        value={caixas}
-        onChange={(e) => setCaixas(e.target.value)}
-        placeholder="Ex: 2"
-        inputMode="numeric"
-        style={{ display: 'block', marginBottom: 10, width: '100%' }}
-      />
-
-      <label>Quantidade por caixa</label>
-      <input
-        value={qtdPorCaixa}
-        onChange={(e) => setQtdPorCaixa(e.target.value)}
-        placeholder="Ex: 10"
-        inputMode="numeric"
-        style={{ display: 'block', marginBottom: 10, width: '100%' }}
-      />
-
-      <label>Unidades avulsas</label>
-      <input
-        value={avulsas}
-        onChange={(e) => setAvulsas(e.target.value)}
-        placeholder="Ex: 3"
-        inputMode="numeric"
-        style={{ display: 'block', marginBottom: 10, width: '100%' }}
-      />
-
-      <p style={{ marginTop: 0, opacity: 0.85 }}>
-        <b>Total em unidades:</b> {totalUnidades}
-      </p>
-
-      <label>Motivo do ajuste (obrigatório)</label>
-      <textarea
-        value={motivo}
-        onChange={(e) => setMotivo(e.target.value)}
-        placeholder="Ex: conferência anterior digitada incorretamente / caixa incompleta / etc."
-        style={{ display: 'block', marginBottom: 16, width: '100%', minHeight: 80 }}
-      />
-
-      <button onClick={salvarAjuste} style={{ width: '100%' }}>
-        Salvar ajuste
-      </button>
-
-      <button
-        onClick={() => router.push('/divergencias')}
-        style={{ width: '100%', marginTop: 10 }}
-      >
-        Voltar
-      </button>
     </div>
   )
 }
