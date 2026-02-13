@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import { getMyRole } from '../../lib/auth'
+
 
 type Mov = {
   id: string
@@ -17,6 +19,9 @@ export default function DivergenciasPage() {
   const router = useRouter()
   const [lista, setLista] = useState<Mov[]>([])
   const [loading, setLoading] = useState(true)
+  const [role, setRole] = useState<string | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
 
   async function carregar() {
     setLoading(true)
@@ -35,8 +40,32 @@ export default function DivergenciasPage() {
   }
 
   useEffect(() => {
-    carregar()
+    async function init() {
+      setAuthLoading(true)
+      const r = await getMyRole()
+      setRole(r)
+      setAuthLoading(false)
+
+      if (r === 'OPERADOR' || r === 'ADMIN') {
+        carregar()
+      }
+    }
+
+    init()
   }, [])
+
+  if (authLoading) {
+    return <div style={{ padding: 40 }}>Carregando...</div>
+  }
+
+  if (role !== 'OPERADOR' && role !== 'ADMIN') {
+    return (
+      <div style={{ padding: 40 }}>
+        <h1>Divergências</h1>
+        <p>Você não tem permissão para acessar esta página.</p>
+      </div>
+    )
+  }
 
   return (
     <div style={{ padding: 40, maxWidth: 900 }}>

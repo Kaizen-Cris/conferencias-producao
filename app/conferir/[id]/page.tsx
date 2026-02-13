@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
+import { getMyRole } from '../../../lib/auth'
+
 
 type Mov = {
   id: string
@@ -17,6 +19,9 @@ type Mov = {
 export default function ConferirPage() {
   const params = useParams()
   const router = useRouter()
+  const [role, setRole] = useState<string | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
 
   // params.id pode ser string ou string[]
   const movIdRaw = params?.id
@@ -43,8 +48,20 @@ export default function ConferirPage() {
   }
 
   useEffect(() => {
-    if (!movId) return
-    carregar(String(movId))
+    async function init() {
+      setAuthLoading(true)
+      const r = await getMyRole()
+      setRole(r)
+      setAuthLoading(false)
+
+      if (!movId) return
+
+      if (r === 'CONFERENTE' || r === 'ADMIN') {
+        carregar(String(movId))
+      }
+    }
+
+    init()
   }, [movId])
 
   async function confirmar() {
@@ -57,6 +74,7 @@ export default function ConferirPage() {
     }
 
     if (!mov) return
+    const fase = mov.status === 'RECONFERIR' ? 2 : 1
 
     // Regra de ouro: não pode conferir a própria movimentação
     if (userId === mov.criado_por) {
@@ -73,22 +91,25 @@ export default function ConferirPage() {
     const novoStatus = qtdInt === mov.qtd_informada ? 'APROVADO' : 'DIVERGENTE'
 
     // 0) impedir conferência duplicada
+
     const { data: confExistente, error: confErr } = await supabase
-    .from('conferencias')
-    .select('id')
-    .eq('movimentacao_id', mov.id)
-    .limit(1)
+      .from('conferencias')
+      .select('id')
+      .eq('movimentacao_id', mov.id)
+      .eq('fase', fase)
+      .limit(1)
 
     if (confErr) {
-    console.log('CONF CHECK ERROR:', confErr)
-    alert('Erro ao verificar conferência existente. Veja o console.')
-    return
+      console.log('CONF CHECK ERROR:', confErr)
+      alert('Erro ao verificar conferência existente. Veja o console.')
+      return
     }
 
     if (confExistente && confExistente.length > 0) {
-    alert('Esta movimentação já foi conferida. Se precisar, use o fluxo de divergência/ajuste.')
-    return
+      alert('Esta movimentação já foi conferida nesta fase. Se precisar, use o fluxo de divergência/ajuste.')
+      return
     }
+
 
 
     // 1) inserir conferência
@@ -98,6 +119,7 @@ export default function ConferirPage() {
         qtd_conferida: qtdInt,
         conferido_por: userId,
         modo: 'DIGITADO',
+        fase,
       },
     ])
 
@@ -124,6 +146,18 @@ export default function ConferirPage() {
   }
 
   if (!movId) return <div style={{ padding: 40 }}>Carregando...</div>
+
+  if (authLoading) return <div style={{ padding: 40 }}>Carregando...</div>
+
+  if (role !== 'CONFERENTE' && role !== 'ADMIN') {
+    return (
+      <div style={{ padding: 40 }}>
+        <h1>Conferir</h1>
+        <p>Você não tem permissão para acessar esta página.</p>
+      </div>
+    )
+  }
+
 
   if (loading) return <div style={{ padding: 40 }}>Carregando...</div>
 

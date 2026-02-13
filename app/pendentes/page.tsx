@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import { getMyRole } from '../../lib/auth'
+
 
 type Mov = {
   id: string
@@ -13,15 +16,20 @@ type Mov = {
 }
 
 export default function PendentesPage() {
+  const router = useRouter()
   const [lista, setLista] = useState<Mov[]>([])
   const [loading, setLoading] = useState(true)
+
+  const [role, setRole] = useState<string | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
 
   async function carregarPendentes() {
     setLoading(true)
     const { data, error } = await supabase
       .from('movimentacoes')
       .select('id,item,lote,qtd_informada,status,criado_em')
-      .in('status', ['PENDENTE', 'AJUSTADO'])
+      .in('status', ['PENDENTE', 'RECONFERIR'])
       .order('criado_em', { ascending: false })
 
     console.log('PENDENTES DATA:', data)
@@ -32,8 +40,34 @@ export default function PendentesPage() {
   }
 
   useEffect(() => {
-    carregarPendentes()
+    async function init() {
+      setAuthLoading(true)
+
+      const r = await getMyRole()
+      setRole(r)
+      setAuthLoading(false)
+
+      if (r === 'CONFERENTE' || r === 'ADMIN') {
+        await carregarPendentes()
+      }
+    }
+
+    init()
   }, [])
+
+  if (authLoading) {
+    return <div style={{ padding: 40 }}>Carregando...</div>
+  }
+
+  if (role !== 'CONFERENTE' && role !== 'ADMIN') {
+    return (
+      <div style={{ padding: 40 }}>
+        <h1>Pendentes</h1>
+        <p>Você não tem permissão para acessar esta página.</p>
+      </div>
+    )
+  }
+
 
   return (
     <div style={{ padding: 40, maxWidth: 900 }}>

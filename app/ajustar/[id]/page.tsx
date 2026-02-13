@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
+import { getMyRole } from '../../../lib/auth'
+
 
 type Mov = {
   id: string
@@ -20,6 +22,9 @@ type Mov = {
 export default function AjustarPage() {
   const params = useParams()
   const router = useRouter()
+  const [role, setRole] = useState<string | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
 
   const movIdRaw = params?.id
   const movId = Array.isArray(movIdRaw) ? movIdRaw[0] : movIdRaw
@@ -73,9 +78,22 @@ export default function AjustarPage() {
   }
 
   useEffect(() => {
-    if (!movId) return
-    carregar(String(movId))
+    async function init() {
+      setAuthLoading(true)
+      const r = await getMyRole()
+      setRole(r)
+      setAuthLoading(false)
+
+      if (!movId) return
+
+      if (r === 'OPERADOR' || r === 'ADMIN') {
+        carregar(String(movId))
+      }
+    }
+
+    init()
   }, [movId])
+
 
   async function salvarAjuste() {
     // 1) pegar usuário logado
@@ -134,7 +152,7 @@ export default function AjustarPage() {
         caixas: caixasOk,
         qtd_por_caixa: qtdPorCaixaOk,
         unidades_avulsas: avulsasOk,
-        status: 'AJUSTADO',
+        status: 'RECONFERIR',
       })
       .eq('id', mov.id)
 
@@ -149,6 +167,19 @@ export default function AjustarPage() {
   }
 
   if (!movId) return <div style={{ padding: 40 }}>Carregando...</div>
+
+  if (authLoading) return <div style={{ padding: 40 }}>Carregando...</div>
+
+  if (role !== 'OPERADOR' && role !== 'ADMIN') {
+    return (
+      <div style={{ padding: 40 }}>
+        <h1>Ajustar</h1>
+        <p>Você não tem permissão para acessar esta página.</p>
+      </div>
+    )
+  }
+
+
   if (loading) return <div style={{ padding: 40 }}>Carregando...</div>
   if (!mov) return <div style={{ padding: 40 }}>Movimentação não encontrada.</div>
 
