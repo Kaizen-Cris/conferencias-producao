@@ -97,73 +97,81 @@ export default function DashboardPage() {
   }
 
   return (
-    <div>
-      <Menu />
-      <div style={{ padding: 40, maxWidth: 1000 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1>Dashboard (últimos 7 dias)</h1>
-          <button onClick={carregar}>Atualizar</button>
-        </div>
+  <div>
+    <Menu />
 
-        {loading && <p>Carregando...</p>}
+      <div className="container">
+        <div className="card">
+          <div className="hstack" style={{ marginBottom: 12 }}>
+            <h1 style={{ margin: 0 }}>Dashboard (últimos 7 dias)</h1>
+            <button className="btn" onClick={carregar}>Atualizar</button>
+          </div>
 
-        {!loading && (
-          <>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-              <div style={{ border: '1px solid #ddd', padding: 12, minWidth: 160 }}>
-                <b>Total</b>
-                <div style={{ fontSize: 24 }}>{total}</div>
-              </div>
-              <div style={{ border: '1px solid #ddd', padding: 12, minWidth: 160 }}>
-                <b>Pendente</b>
-                <div style={{ fontSize: 24 }}>{pendentes}</div>
-              </div>
-              <div style={{ border: '1px solid #ddd', padding: 12, minWidth: 160 }}>
-                <b>Reconferir</b>
-                <div style={{ fontSize: 24 }}>{reconferir}</div>
-              </div>
-              <div style={{ border: '1px solid #ddd', padding: 12, minWidth: 160 }}>
-                <b>Divergente</b>
-                <div style={{ fontSize: 24 }}>{divergentes}</div>
-              </div>
-              <div style={{ border: '1px solid #ddd', padding: 12, minWidth: 160 }}>
-                <b>Aprovado</b>
-                <div style={{ fontSize: 24 }}>{aprovados}</div>
-              </div>
-            </div>
+          {loading && <p>Carregando...</p>}
 
-            <h2>Por dia</h2>
-            {porDia.length === 0 && <p>Sem dados nos últimos 7 dias.</p>}
+          {!loading && (
+            <>
+              <div className="grid-cards">
+                <div className="card-kpi">
+                  <div className="label">Total</div>
+                  <div className="value">{total}</div>
+                </div>
 
-            {porDia.length > 0 && (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Dia</th>
-                    <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Total</th>
-                    <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Pendente</th>
-                    <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Reconferir</th>
-                    <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Divergente</th>
-                    <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Aprovado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {porDia.map(([day, v]) => (
-                    <tr key={day}>
-                      <td style={{ padding: '8px 0' }}>{day}</td>
-                      <td>{v.total}</td>
-                      <td>{v.pend}</td>
-                      <td>{v.rec}</td>
-                      <td>{v.div}</td>
-                      <td>{v.apr}</td>
+                <div className="card-kpi">
+                  <div className="label">Pendentes</div>
+                  <div className="value">{pendentes}</div>
+                </div>
+
+                <div className="card-kpi">
+                  <div className="label">Reconferir</div>
+                  <div className="value">{reconferir}</div>
+                </div>
+
+                <div className="card-kpi">
+                  <div className="label">Divergentes</div>
+                  <div className="value">{divergentes}</div>
+                </div>
+
+                <div className="card-kpi">
+                  <div className="label">Aprovados</div>
+                  <div className="value">{aprovados}</div>
+                </div>
+              </div>
+
+              <h2 style={{ marginTop: 0 }}>Por dia</h2>
+              {porDia.length === 0 && <p style={{ color: 'var(--muted)' }}>Sem dados nos últimos 7 dias.</p>}
+
+              {porDia.length > 0 && (
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Dia</th>
+                      <th>Total</th>
+                      <th>Pendente</th>
+                      <th>Reconferir</th>
+                      <th>Divergente</th>
+                      <th>Aprovado</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
-        )}
+                  </thead>
+                  <tbody>
+                    {porDia.map(([day, v]) => (
+                      <tr key={day}>
+                        <td style={{ padding: '8px 0' }}>{day}</td>
+                        <td>{v.total}</td>
+                        <td>{v.pend}</td>
+                        <td>{v.rec}</td>
+                        <td>{v.div}</td>
+                        <td>{v.apr}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
+
 }

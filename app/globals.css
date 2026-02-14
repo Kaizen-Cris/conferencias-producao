@@ -91,6 +91,7 @@ body{
 .table{
   width: 100%;
   border-collapse: collapse;
+  margin-top: 20px;
 }
 
 .table th{
@@ -124,11 +125,43 @@ body{
 }
 
 .table tbody tr:hover{
-  background: #f9fafb;
+  background: #f3f4f6;
 }
 
 .row-clickable,
 .row-clickable td{
   cursor: pointer;
+}
+
+.menu-bar{
+  border-bottom: 1px solid var(--border);
+  background: white;
+  box-shadow: 0 6px 16px rgba(17,24,39,.06);
+}
+
+.grid-cards{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.card-kpi{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.card-kpi .label{
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.card-kpi .value{
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 6px;
 }
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
 import Menu from '../../components/menu'  
+import StatusBadge from '../../components/statusbadge'
 
 
 type Mov = {
@@ -18,10 +19,14 @@ type Mov = {
 
 export default function DivergenciasPage() {
   const router = useRouter()
-  const [lista, setLista] = useState<Mov[]>([])
-  const [loading, setLoading] = useState(true)
+
   const [role, setRole] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
+
+  const [lista, setLista] = useState<Mov[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const [busca, setBusca] = useState('')
 
 
   async function carregar() {
@@ -36,7 +41,14 @@ export default function DivergenciasPage() {
     console.log('DIVERGENCIAS DATA:', data)
     console.log('DIVERGENCIAS ERROR:', error)
 
-    setLista((data as Mov[]) ?? [])
+    let rows = ((data as Mov[]) ?? [])
+
+    if (busca.trim()) {
+      const b = busca.trim().toLowerCase()
+      rows = rows.filter((m) => `${m.item} ${m.lote}`.toLowerCase().includes(b))
+    }
+
+    setLista(rows)
     setLoading(false)
   }
 
@@ -61,57 +73,79 @@ export default function DivergenciasPage() {
 
   if (role !== 'OPERADOR' && role !== 'ADMIN') {
     return (
-      <div style={{ padding: 40 }}>
-        <h1>Divergências</h1>
-        <p>Você não tem permissão para acessar esta página.</p>
+      <div>
+        <Menu />
+        <div className="container">
+          <div className="card">
+            <h1>Divergências</h1>
+            <p>Você não tem permissão para acessar esta página.</p>
+          </div>
+        </div>
       </div>
     )
   }
 
-  return (
+    return (
     <div>
       <Menu />
-      <div style={{ padding: 40, maxWidth: 900 }}>
-        <h1>Divergências</h1>
 
-        <button onClick={carregar} style={{ marginBottom: 16 }}>
-          Atualizar
-        </button>
+      <div className="container">
+        <div className="card">
+          <div className="hstack" style={{ marginBottom: 12 }}>
+            <h1 style={{ margin: 0 }}>Divergências</h1>
+            <button className="btn" onClick={carregar}>Atualizar</button>
+          </div>
 
-        {loading && <p>Carregando...</p>}
-        {!loading && lista.length === 0 && <p>Nenhuma divergência.</p>}
+          <input
+            className="input"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por item ou lote"
+          />
 
-        {!loading && lista.length > 0 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Item</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Lote</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Informado (un)</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Criado em</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lista.map((m) => (
-                <tr
-                  key={m.id}
-                  className="row-clickable"
-                  onClick={() => router.push(`/ajustar/${m.id}`)}
-                >
-                  <td style={{ padding: '8px 0' }}>{m.item}</td>
-                  <td>{m.lote}</td>
-                  <td>{m.qtd_informada}</td>
-                  <td>{new Date(m.criado_em).toLocaleString()}</td>
+
+          {loading && <p>Carregando...</p>}
+
+          {!loading && lista.length === 0 && (
+            <p style={{ color: 'var(--muted)' }}>
+              Nenhuma divergência no momento.
+            </p>
+          )}
+
+          {!loading && lista.length > 0 && (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Lote</th>
+                  <th>Total (un)</th>
+                  <th>Status</th>
+                  <th>Criado em</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
 
-        <div style={{ marginTop: 16 }}>
-          <button onClick={() => router.push('/pendentes')}>Ir para Pendentes</button>
+              <tbody>
+                {lista.map((m) => (
+                  <tr
+                    key={m.id}
+                    className="row-clickable"
+                    onClick={() => router.push(`/ajustar/${m.id}`)}
+                    title="Clique para ajustar"
+                  >
+                    <td>{m.item}</td>
+                    <td>{m.lote}</td>
+                    <td>{m.qtd_informada}</td>
+                    <td><StatusBadge status={m.status} /></td>
+                    <td>{new Date(m.criado_em).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
-    </div>    
+    </div>
   )
 }
+
+

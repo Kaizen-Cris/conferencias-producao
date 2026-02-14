@@ -26,7 +26,7 @@ export default function Menu() {
 
   return (
 
-      <div style={{ borderBottom: '1px solid var(--border)', background: 'white' }}>
+      <div className="menu-bar">
         <div className="container" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           {(role === 'OPERADOR' || role === 'ADMIN') && (
             <button className="btn" onClick={() => router.push('/')}>

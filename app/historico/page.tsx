@@ -98,13 +98,13 @@ export default function HistoricoPage() {
     <div>
       <Menu />
       <div style={{ padding: 40, maxWidth: 1000 }}>
-        <h1>Histórico</h1>
+        <div className="hstack" style={{ marginBottom: 12 }}>
+          <h1 style={{ margin: 0 }}>Histórico</h1>
+          <button className="btn" onClick={carregar}>Atualizar</button>
+        </div>
 
-        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-          <select
-            value={statusFiltro}
-            onChange={(e) => setStatusFiltro(e.target.value)}
-          >
+        <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+          <select className="select" value={statusFiltro} onChange={(e) => setStatusFiltro(e.target.value)} style={{ maxWidth: 220 }}>
             <option value="TODOS">Todos</option>
             <option value="PENDENTE">Pendente</option>
             <option value="RECONFERIR">Reconferir</option>
@@ -113,21 +113,21 @@ export default function HistoricoPage() {
           </select>
 
           <input
+            className="input"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por item ou lote"
-            style={{ flex: 1 }}
+            style={{ flex: 1, minWidth: 240 }}
           />
-
-          <button onClick={carregar}>Atualizar</button>
         </div>
+
 
         {loading && <p>Carregando...</p>}
 
         {!loading && lista.length === 0 && <p>Nenhum registro.</p>}
 
         {!loading && lista.length > 0 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="table">
             <thead>
               <tr>
                 <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Item</th>
@@ -142,6 +142,7 @@ export default function HistoricoPage() {
                 <tr
                   key={m.id}
                   className="row-clickable"
+                  title="Clique para ver detalhes"
                   onClick={() => router.push(`/movimentacao/${m.id}`)}
                 >
                   <td style={{ padding: '8px 0' }}>{m.item}</td>

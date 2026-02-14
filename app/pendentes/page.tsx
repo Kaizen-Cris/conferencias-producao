@@ -19,12 +19,14 @@ type Mov = {
 
 export default function PendentesPage() {
   const router = useRouter()
-  const [lista, setLista] = useState<Mov[]>([])
-  const [loading, setLoading] = useState(true)
-
+  
   const [role, setRole] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
 
+  const [lista, setLista] = useState<Mov[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const [busca, setBusca] = useState('')
 
   async function carregarPendentes() {
     setLoading(true)
@@ -37,7 +39,14 @@ export default function PendentesPage() {
     console.log('PENDENTES DATA:', data)
     console.log('PENDENTES ERROR:', error)
 
-    setLista((data as Mov[]) ?? [])
+    let rows = ((data as Mov[]) ?? [])
+
+    if (busca.trim()) {
+      const b = busca.trim().toLowerCase()
+      rows = rows.filter((m) => `${m.item} ${m.lote}`.toLowerCase().includes(b))
+    }
+
+    setLista(rows)
     setLoading(false)
   }
 
@@ -75,12 +84,18 @@ export default function PendentesPage() {
     <div>
       <Menu />
       <div className="container">
-        <div className="card">  
-          <h1>Pendentes</h1>
+        <div className="card">
+          <div className="hstack" style={{ marginBottom: 12 }}>
+            <h1 style={{ margin: 0 }}>Pendentes</h1>
+            <button className="btn" onClick={carregarPendentes}>Atualizar</button>
+          </div>
 
-          <button className="btn" onClick={carregarPendentes} style={{ marginBottom: 16 }}>
-            Atualizar
-          </button>
+          <input
+            className="input"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por item ou lote"
+          />
 
           {loading && <p>Carregando...</p>}
 
@@ -118,6 +133,7 @@ export default function PendentesPage() {
                   <tr
                     key={m.id}
                     className="row-clickable"
+                    title="Clique para conferir"
                     onClick={() => router.push(`/conferir/${m.id}`)}
                     >
                     <td style={{ padding: '8px 0' }}>{m.item}</td>

@@ -150,23 +150,24 @@ export default function Home() {
   return (
 
     <div>
-      <Menu /> 
-        <div className="container">
-          <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <h1>Registrar Movimentação</h1>
-          </div>
+    <Menu />
+    <div className="container">
+      <div className="card">
+        <div className="hstack" style={{ marginBottom: 12 }}>
+          <h1 style={{ margin: 0 }}>Registrar Movimentação</h1>
+          <button className="btn" onClick={handleLogout}>Sair</button>
+        </div>
 
-          <p style={{ marginTop: 0, opacity: 0.7 }}>
-            Status inicial será <b>PENDENTE</b>.
-          </p>
+        <p style={{ marginTop: 0, color: 'var(--muted)' }}>
+          Status inicial será <b>PENDENTE</b>.
+        </p>
 
           <label>Item</label>
           <input
             value={item}
             onChange={(e) => setItem(e.target.value)}
             placeholder="Ex: Item X"
-            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+            className="input"
           />
 
           <label>Lote</label>
@@ -174,7 +175,7 @@ export default function Home() {
             value={lote}
             onChange={(e) => setLote(e.target.value)}
             placeholder="Ex: Lote Y"
-            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+            className="input"
           />
 
           <label>Caixas</label>
@@ -183,7 +184,7 @@ export default function Home() {
             onChange={(e) => setCaixas(e.target.value)}
             placeholder="Ex: 4"
             inputMode="numeric"
-            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+            className="input"
           />
 
           <label>Quantidade por caixa</label>
@@ -192,7 +193,7 @@ export default function Home() {
             onChange={(e) => setQtdPorCaixa(e.target.value)}
             placeholder="Ex: 12"
             inputMode="numeric"
-            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+            className="input"
           />
 
           <label>Unidades avulsas (opcional)</label>
@@ -201,7 +202,7 @@ export default function Home() {
             onChange={(e) => setUnidadesAvulsas(e.target.value)}
             placeholder="Ex: 3"
             inputMode="numeric"
-            style={{ display: 'block', marginBottom: 10, width: '100%' }}
+            className="input"
           />
 
           <p style={{ marginTop: 0, opacity: 0.8 }}>
@@ -209,7 +210,7 @@ export default function Home() {
           </p>
 
 
-          <button onClick={handleSalvarMovimentacao} style={{ width: '100%' }}>
+          <button onClick={handleSalvarMovimentacao} className="btn" style={{ width: '100%' }}>
             Salvar movimentação
           </button>
         </div>
