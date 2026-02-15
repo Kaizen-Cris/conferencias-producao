@@ -41,7 +41,6 @@ export default function HistoricoPage() {
       q = q.eq('status', statusFiltro)
     }
 
-    // Busca simples no front (por enquanto)
     const { data, error } = await q
 
     console.log('HIST DATA:', data)
@@ -51,9 +50,7 @@ export default function HistoricoPage() {
 
     if (busca.trim()) {
       const b = busca.trim().toLowerCase()
-      rows = rows.filter((m) =>
-        `${m.item} ${m.lote}`.toLowerCase().includes(b)
-      )
+      rows = rows.filter((m) => `${m.item} ${m.lote}`.toLowerCase().includes(b))
     }
 
     setLista(rows)
@@ -75,20 +72,34 @@ export default function HistoricoPage() {
     init()
   }, [])
 
+  // ✅ Ao mudar filtro, recarrega automaticamente (mantém comportamento que você já tinha)
   useEffect(() => {
     if (role === 'ADMIN') carregar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFiltro])
 
-  if (authLoading) return <div style={{ padding: 40 }}>Carregando...</div>
+  // ✅ Carregando padronizado com Menu + container/card
+  if (authLoading) {
+    return (
+      <div>
+        
+        <div className="container">
+          <div className="card">Carregando...</div>
+        </div>
+      </div>
+    )
+  }
 
+  // ✅ Sem permissão padronizado com Menu + container/card
   if (role !== 'ADMIN') {
     return (
       <div>
         <Menu />
-        <div style={{ padding: 40 }}>
-          <h1>Histórico</h1>
-          <p>Você não tem permissão para acessar esta página.</p>
+        <div className="container">
+          <div className="card">
+            <h1 style={{ marginTop: 0 }}>Histórico</h1>
+            <p>Você não tem permissão para acessar esta página.</p>
+          </div>
         </div>
       </div>
     )
@@ -97,64 +108,76 @@ export default function HistoricoPage() {
   return (
     <div>
       <Menu />
-      <div style={{ padding: 40, maxWidth: 1000 }}>
-        <div className="hstack" style={{ marginBottom: 12 }}>
-          <h1 style={{ margin: 0 }}>Histórico</h1>
-          <button className="btn" onClick={carregar}>Atualizar</button>
-        </div>
 
-        <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-          <select className="select" value={statusFiltro} onChange={(e) => setStatusFiltro(e.target.value)} style={{ maxWidth: 220 }}>
-            <option value="TODOS">Todos</option>
-            <option value="PENDENTE">Pendente</option>
-            <option value="RECONFERIR">Reconferir</option>
-            <option value="DIVERGENTE">Divergente</option>
-            <option value="APROVADO">Aprovado</option>
-          </select>
+      <div className="container">
+        <div className="card">
+          <div className="hstack" style={{ marginBottom: 12 }}>
+            <h1 style={{ margin: 0 }}>Histórico</h1>
+            <button className="btn" onClick={carregar}>Atualizar</button>
+          </div>
 
-          <input
-            className="input"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por item ou lote"
-            style={{ flex: 1, minWidth: 240 }}
-          />
-        </div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+            <select
+              className="select"
+              value={statusFiltro}
+              onChange={(e) => setStatusFiltro(e.target.value)}
+              style={{ maxWidth: 220 }}
+            >
+              <option value="TODOS">Todos</option>
+              <option value="PENDENTE">Pendente</option>
+              <option value="RECONFERIR">Reconferir</option>
+              <option value="DIVERGENTE">Divergente</option>
+              <option value="APROVADO">Aprovado</option>
+            </select>
 
+            <input
+              className="input"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por item ou lote"
+              style={{ flex: 1, minWidth: 240 }}
+            />
 
-        {loading && <p>Carregando...</p>}
+            {/* ✅ Busca só no front: botão reaplica sem ter que mexer em backend */}
+            <button className="btn" onClick={carregar}>Buscar</button>
+          </div>
 
-        {!loading && lista.length === 0 && <p>Nenhum registro.</p>}
+          {loading && <p>Carregando...</p>}
 
-        {!loading && lista.length > 0 && (
-          <table className="table">
-            <thead>
-              <tr>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Item</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Lote</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Total (un)</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Status</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Criado em</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lista.map((m) => (
-                <tr
-                  key={m.id}
-                  className="row-clickable"
-                  title="Clique para ver detalhes"
-                  onClick={() => router.push(`/movimentacao/${m.id}`)}
-                >
-                  <td style={{ padding: '8px 0' }}>{m.item}</td>
-                  <td>{m.lote}</td>
-                  <td>{m.qtd_informada}</td>
-                  <td><StatusBadge status={m.status} /></td>
-                  <td>{new Date(m.criado_em).toLocaleString()}</td>
+          {!loading && lista.length === 0 && (
+            <p style={{ color: 'var(--muted)' }}>Nenhum registro.</p>
+          )}
+
+          {!loading && lista.length > 0 && (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Lote</th>
+                  <th>Total (un)</th>
+                  <th>Status</th>
+                  <th>Criado em</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {lista.map((m) => (
+                  <tr
+                    key={m.id}
+                    className="row-clickable"
+                    title="Clique para ver detalhes"
+                    onClick={() => router.push(`/movimentacao/${m.id}`)}
+                  >
+                    <td style={{ padding: '8px 0' }}>{m.item}</td>
+                    <td>{m.lote}</td>
+                    <td>{m.qtd_informada}</td>
+                    <td><StatusBadge status={m.status} /></td>
+                    <td>{new Date(m.criado_em).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import { getMyRole } from '../../../lib/auth'
 import Menu from '../../../components/menu'
+import StatusBadge from '../../../components/statusbadge'
 
 type Mov = {
   id: string
@@ -98,8 +99,6 @@ export default function MovimentacaoDetalhePage() {
       setAuthLoading(false)
 
       if (!movId) return
-
-      // no MVP: só ADMIN acessa o detalhe
       if (r === 'ADMIN') {
         carregarTudo(String(movId))
       }
@@ -135,109 +134,156 @@ export default function MovimentacaoDetalhePage() {
       })
     })
 
-    // ordenar por data
     items.sort((x, y) => new Date(x.when).getTime() - new Date(y.when).getTime())
     return items
   }, [mov, confs, ajustes])
 
-  if (authLoading) return <div style={{ padding: 40 }}>Carregando...</div>
-
-  if (role !== 'ADMIN') {
+  // ✅ Tela padrão de carregamento
+  if (!movId || authLoading || loading) {
     return (
       <div>
         <Menu />
-        <div style={{ padding: 40 }}>
-          <h1>Detalhe</h1>
-          <p>Você não tem permissão para acessar esta página.</p>
+        <div className="container">
+          <div className="card">Carregando...</div>
         </div>
       </div>
     )
   }
 
-  if (!movId) return <div style={{ padding: 40 }}>Carregando...</div>
-  if (loading) return <div style={{ padding: 40 }}>Carregando...</div>
-  if (!mov) return <div style={{ padding: 40 }}>Movimentação não encontrada.</div>
+  // ✅ Permissão
+  if (role !== 'ADMIN') {
+    return (
+      <div>
+        <Menu />
+        <div className="container">
+          <div className="card">
+            <h1 style={{ marginTop: 0 }}>Detalhe</h1>
+            <p>Você não tem permissão para acessar esta página.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ✅ Não encontrado
+  if (!mov) {
+    return (
+      <div>
+        <Menu />
+        <div className="container">
+          <div className="card">Movimentação não encontrada.</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
       <Menu />
-      <div style={{ padding: 40, maxWidth: 1000 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1>Movimentação</h1>
-          <button onClick={() => router.push('/historico')}>Voltar</button>
-        </div>
 
-        <div style={{ padding: 12, border: '1px solid #ddd', marginBottom: 16 }}>
-          <div><b>ID:</b> {mov.id}</div>
-          <div><b>Item:</b> {mov.item}</div>
-          <div><b>Lote:</b> {mov.lote}</div>
-          <div><b>Status:</b> {mov.status}</div>
-          <div><b>Criado em:</b> {new Date(mov.criado_em).toLocaleString()}</div>
-          <hr />
-          <div><b>Caixas:</b> {mov.caixas ?? 0}</div>
-          <div><b>Qtd/caixa:</b> {mov.qtd_por_caixa ?? 0}</div>
-          <div><b>Avulsas:</b> {mov.unidades_avulsas ?? 0}</div>
-          <div><b>Total (un):</b> {mov.qtd_informada}</div>
-        </div>
+      <div className="container">
+        <div className="card">
+          <div className="hstack" style={{ marginBottom: 12 }}>
+            <h1 style={{ margin: 0 }}>Movimentação</h1>
+            <button className="btn" onClick={() => router.push('/historico')}>
+              Voltar
+            </button>
+          </div>
 
-        <h2>Conferências</h2>
-        {confs.length === 0 && <p>Nenhuma conferência registrada.</p>}
-        {confs.length > 0 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
-            <thead>
-              <tr>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Fase</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Qtd</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Conferido por</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Quando</th>
-              </tr>
-            </thead>
-            <tbody>
-              {confs.map((c) => (
-                <tr key={c.id}>
-                  <td style={{ padding: '8px 0' }}>{c.fase}</td>
-                  <td>{c.qtd_conferida}</td>
-                  <td style={{ fontFamily: 'monospace' }}>{c.conferido_por}</td>
-                  <td>{new Date(c.criado_em).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+          {/* RESUMO */}
+          <div className="card" style={{ boxShadow: 'none', marginBottom: 12 }}>
+            <div><b>ID:</b> {mov.id}</div>
+            <div><b>Item:</b> {mov.item}</div>
+            <div><b>Lote:</b> {mov.lote}</div>
 
-        <h2>Ajustes</h2>
-        {ajustes.length === 0 && <p>Nenhum ajuste registrado.</p>}
-        {ajustes.length > 0 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
-            <thead>
-              <tr>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>De</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Para</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Motivo</th>
-                <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>Quando</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ajustes.map((a) => (
-                <tr key={a.id}>
-                  <td style={{ padding: '8px 0' }}>{a.qtd_antiga}</td>
-                  <td>{a.qtd_nova}</td>
-                  <td>{a.motivo}</td>
-                  <td>{new Date(a.criado_em).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        <h2>Linha do tempo</h2>
-        <div style={{ border: '1px solid #ddd', padding: 12 }}>
-          {timeline.map((t, idx) => (
-            <div key={idx} style={{ padding: '8px 0', borderBottom: idx === timeline.length - 1 ? 'none' : '1px solid #eee' }}>
-              <div><b>{new Date(t.when).toLocaleString()}</b> — {t.label}</div>
-              {t.detail && <div style={{ opacity: 0.8 }}>{t.detail}</div>}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <b>Status:</b> <StatusBadge status={mov.status} />
             </div>
-          ))}
+
+            <div><b>Criado em:</b> {new Date(mov.criado_em).toLocaleString()}</div>
+
+            <hr style={{ border: 0, borderTop: '1px solid var(--border)', margin: '12px 0' }} />
+
+            <div><b>Caixas:</b> {mov.caixas ?? 0}</div>
+            <div><b>Qtd/caixa:</b> {mov.qtd_por_caixa ?? 0}</div>
+            <div><b>Avulsas:</b> {mov.unidades_avulsas ?? 0}</div>
+            <div><b>Total (un):</b> {mov.qtd_informada}</div>
+          </div>
+
+          {/* CONFERÊNCIAS */}
+          <h2 style={{ marginTop: 0 }}>Conferências</h2>
+          {confs.length === 0 && (
+            <p style={{ color: 'var(--muted)' }}>Nenhuma conferência registrada.</p>
+          )}
+
+          {confs.length > 0 && (
+            <table className="table" style={{ marginBottom: 16 }}>
+              <thead>
+                <tr>
+                  <th>Fase</th>
+                  <th>Qtd</th>
+                  <th>Conferido por</th>
+                  <th>Quando</th>
+                </tr>
+              </thead>
+              <tbody>
+                {confs.map((c) => (
+                  <tr key={c.id}>
+                    <td style={{ padding: '8px 0' }}>{c.fase}</td>
+                    <td>{c.qtd_conferida}</td>
+                    <td style={{ fontFamily: 'monospace' }}>{c.conferido_por}</td>
+                    <td>{new Date(c.criado_em).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* AJUSTES */}
+          <h2 style={{ marginTop: 0 }}>Ajustes</h2>
+          {ajustes.length === 0 && (
+            <p style={{ color: 'var(--muted)' }}>Nenhum ajuste registrado.</p>
+          )}
+
+          {ajustes.length > 0 && (
+            <table className="table" style={{ marginBottom: 16 }}>
+              <thead>
+                <tr>
+                  <th>De</th>
+                  <th>Para</th>
+                  <th>Motivo</th>
+                  <th>Quando</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ajustes.map((a) => (
+                  <tr key={a.id}>
+                    <td style={{ padding: '8px 0' }}>{a.qtd_antiga}</td>
+                    <td>{a.qtd_nova}</td>
+                    <td>{a.motivo}</td>
+                    <td>{new Date(a.criado_em).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* TIMELINE */}
+          <h2 style={{ marginTop: 0 }}>Linha do tempo</h2>
+          <div className="card" style={{ boxShadow: 'none' }}>
+            {timeline.map((t, idx) => (
+              <div
+                key={idx}
+                style={{
+                  padding: '10px 0',
+                  borderBottom: idx === timeline.length - 1 ? 'none' : '1px solid var(--border)',
+                }}
+              >
+                <div><b>{new Date(t.when).toLocaleString()}</b> — {t.label}</div>
+                {t.detail && <div style={{ color: 'var(--muted)' }}>{t.detail}</div>}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

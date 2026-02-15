@@ -67,17 +67,29 @@ export default function PendentesPage() {
   }, [])
 
   if (authLoading) {
-    return <div style={{ padding: 40 }}>Carregando...</div>
-  }
+      return (
+        <div>
+          
+          <div className="container">
+            <div className="card">Carregando...</div>
+          </div>
+        </div>
+      )
+    }
 
   if (role !== 'CONFERENTE' && role !== 'ADMIN') {
-    return (
-      <div style={{ padding: 40 }}>
-        <h1>Pendentes</h1>
-        <p>Você não tem permissão para acessar esta página.</p>
-      </div>
-    )
-  }
+      return (
+        <div>
+          <Menu />
+          <div className="container">
+            <div className="card">
+              <h1 style={{ marginTop: 0 }}>Pendentes</h1>
+              <p>Você não tem permissão para acessar esta página.</p>
+            </div>
+          </div>
+        </div>
+      )
+    }
 
 
   return (

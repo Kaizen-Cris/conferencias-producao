@@ -68,8 +68,15 @@ export default function DivergenciasPage() {
   }, [])
 
   if (authLoading) {
-    return <div style={{ padding: 40 }}>Carregando...</div>
-  }
+      return (
+        <div>
+          
+          <div className="container">
+            <div className="card">Carregando...</div>
+          </div>
+        </div>
+      )
+    }
 
   if (role !== 'OPERADOR' && role !== 'ADMIN') {
     return (

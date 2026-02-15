@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import { getMyRole } from '../../../lib/auth'
 import Menu from '../../../components/menu'
-
+import { onlyDigits } from '../../../lib/onlyDigits'
 
 
 type Mov = {
@@ -30,8 +30,19 @@ export default function ConferirPage() {
   const movId = Array.isArray(movIdRaw) ? movIdRaw[0] : movIdRaw
 
   const [mov, setMov] = useState<Mov | null>(null)
-  const [qtdConferida, setQtdConferida] = useState('')
+  const [caixas, setCaixas] = useState('')
+  const [qtdPorCaixa, setQtdPorCaixa] = useState('')
+  const [avulsas, setAvulsas] = useState('')
   const [loading, setLoading] = useState(true)
+
+  const n = (v: string) => {
+  const x = Number(v)
+  return Number.isFinite(x) ? Math.trunc(x) : 0
+  }
+
+  const totalConferido =
+  Number(caixas || 0) * Number(qtdPorCaixa || 0) + Number(avulsas || 0)
+
 
   async function carregar(id: string) {
     setLoading(true)
@@ -84,9 +95,9 @@ export default function ConferirPage() {
       return
     }
 
-    const qtdInt = parseInt(qtdConferida, 10)
-    if (Number.isNaN(qtdInt) || qtdInt <= 0) {
-      alert('Informe uma quantidade conferida válida (maior que zero).')
+    const qtdInt = totalConferido
+    if (qtdInt <= 0) {
+      alert('Informe a quantidade conferida (maior que zero).')
       return
     }
 
@@ -147,57 +158,106 @@ export default function ConferirPage() {
     router.push('/pendentes')
   }
 
-  if (!movId) return <div style={{ padding: 40 }}>Carregando...</div>
-
-  if (authLoading) return <div style={{ padding: 40 }}>Carregando...</div>
-
-  if (role !== 'CONFERENTE' && role !== 'ADMIN') {
+  if (!movId || authLoading || loading) {
     return (
-      <div style={{ padding: 40 }}>
-        <h1>Conferir</h1>
-        <p>Você não tem permissão para acessar esta página.</p>
+      <div>
+        <Menu />
+        <div className="container">
+          <div className="card">Carregando...</div>
+        </div>
       </div>
     )
   }
 
+  if (role !== 'CONFERENTE' && role !== 'ADMIN') {
+    return (
+      <div>
+        <Menu />
+        <div className="container">
+          <div className="card">
+            <h1 style={{ marginTop: 0 }}>Conferir</h1>
+            <p>Você não tem permissão para acessar esta página.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-  if (loading) return <div style={{ padding: 40 }}>Carregando...</div>
-
-  if (!mov) return <div style={{ padding: 40 }}>Movimentação não encontrada.</div>
+  if (!mov) {
+    return (
+      <div>
+        <Menu />
+        <div className="container">
+          <div className="card">Movimentação não encontrada.</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
       <Menu />
-      <div style={{ padding: 40, maxWidth: 520 }}>
-        <h1>Conferir</h1>
 
-        <div style={{ padding: 12, border: '1px solid #ddd', marginBottom: 16 }}>
-          <div><b>Item:</b> {mov.item}</div>
-          <div><b>Lote:</b> {mov.lote}</div>
-          <div><b>Informado:</b> {mov.qtd_informada} unidades</div>
-          <div><b>Status:</b> {mov.status}</div>
+      <div className="container">
+        <div className="card">
+          <div className="hstack" style={{ marginBottom: 12 }}>
+            <h1 style={{ margin: 0 }}>Conferir</h1>
+
+            <button className="btn" onClick={() => router.push('/pendentes')}>
+              Voltar
+            </button>
+          </div>
+
+          <div className="card" style={{ boxShadow: 'none', marginBottom: 12 }}>
+            <div><b>Item:</b> {mov.item}</div>
+            <div><b>Lote:</b> {mov.lote}</div>
+            <div><b>Informado:</b> {mov.qtd_informada} unidades</div>
+            <div><b>Status:</b> {mov.status}</div>
+          </div>
+
+          <label>Caixas</label>
+          <input
+            className="input"
+            value={caixas}
+            onChange={(e) => setCaixas(onlyDigits(e.target.value))}
+            placeholder="Ex: 2"
+            inputMode="numeric"
+          />
+
+          <div style={{ height: 10 }} />
+
+          <label>Quantidade por caixa</label>
+          <input
+            className="input"
+            value={qtdPorCaixa}
+            onChange={(e) => setQtdPorCaixa(onlyDigits(e.target.value))}
+            placeholder="Ex: 10"
+            inputMode="numeric"
+          />
+
+          <div style={{ height: 10 }} />
+
+          <label>Unidades avulsas (opcional)</label>
+          <input
+            className="input"
+            value={avulsas}
+            onChange={(e) => setAvulsas(onlyDigits(e.target.value))}
+            placeholder="Ex: 3"
+            inputMode="numeric"
+          />
+
+          <div style={{ height: 10 }} />
+
+          <p style={{ marginTop: 0, color: 'var(--muted)' }}>
+            <b>Total conferido (unidades):</b> {totalConferido}
+          </p>
+
+          <button className="btn" onClick={confirmar} style={{ width: '100%' }}>
+            Confirmar conferência
+          </button>
         </div>
-
-        <label>Quantidade conferida (unidades)</label>
-        <input
-          value={qtdConferida}
-          onChange={(e) => setQtdConferida(e.target.value)}
-          placeholder="Ex: 23"
-          inputMode="numeric"
-          style={{ display: 'block', marginBottom: 16, width: '100%' }}
-        />
-
-        <button onClick={confirmar} style={{ width: '100%' }}>
-          Confirmar conferência
-        </button>
-
-        <button
-          onClick={() => router.push('/pendentes')}
-          style={{ width: '100%', marginTop: 10 }}
-        >
-          Voltar
-        </button>
       </div>
     </div>
   )
+
 }

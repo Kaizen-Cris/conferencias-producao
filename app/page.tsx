@@ -1,49 +1,75 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import Menu from '../components/menu'
+import { onlyDigits } from '../lib/onlyDigits'
 
+type ItemRow = { id: string; nome: string }
 
 export default function Home() {
   // login
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [session, setSession] = useState(null)
+  const [session, setSession] = useState<any>(null)
 
   // form movimentação
-  const [item, setItem] = useState('')
   const [lote, setLote] = useState('')
   const [caixas, setCaixas] = useState('')
   const [qtdPorCaixa, setQtdPorCaixa] = useState('')
   const [unidadesAvulsas, setUnidadesAvulsas] = useState('0')
 
-  const caixasInt = parseInt(caixas || '0', 10)
-  const qtdPorCaixaInt = parseInt(qtdPorCaixa || '0', 10)
-  const unidadesAvulsasInt = parseInt(unidadesAvulsas || '0', 10)
+  // itens (dropdown + busca)
+  const [itens, setItens] = useState<ItemRow[]>([])
+  const [itemId, setItemId] = useState('')
+  const [itemBusca, setItemBusca] = useState('')
 
-  const totalUnidades =
-    (Number.isNaN(caixasInt) ? 0 : caixasInt) *
-      (Number.isNaN(qtdPorCaixaInt) ? 0 : qtdPorCaixaInt) +
-    (Number.isNaN(unidadesAvulsasInt) ? 0 : unidadesAvulsasInt)
+  const totalUnidades = useMemo(() => {
+    const c = Number(caixas || 0)
+    const q = Number(qtdPorCaixa || 0)
+    const a = Number(unidadesAvulsas || 0)
 
+    const cOk = Number.isFinite(c) ? c : 0
+    const qOk = Number.isFinite(q) ? q : 0
+    const aOk = Number.isFinite(a) ? a : 0
 
-  // carrega sessão atual (se já estiver logado)
+    return cOk * qOk + aOk
+  }, [caixas, qtdPorCaixa, unidadesAvulsas])
+
+  // carregar sessão atual (se já estiver logado)
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session ?? null)
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        setSession(newSession)
-      }
-    )
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession)
+    })
 
     return () => {
       listener.subscription.unsubscribe()
     }
   }, [])
+
+  // carregar itens do catálogo (quando estiver logado)
+  useEffect(() => {
+    async function carregarItens() {
+      if (!session) return
+
+      const { data, error } = await supabase
+        .from('itens')
+        .select('id,nome')
+        .eq('ativo', true)
+        .order('nome', { ascending: true })
+
+      console.log('ITENS DATA:', data)
+      console.log('ITENS ERROR:', error)
+
+      setItens((data as ItemRow[]) ?? [])
+    }
+
+    carregarItens()
+  }, [session])
 
   async function handleLogin() {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -60,7 +86,6 @@ export default function Home() {
   }
 
   async function handleSalvarMovimentacao() {
-    // 1) pegar usuário logado
     const { data: sessionData } = await supabase.auth.getSession()
     const userId = sessionData.session?.user?.id
 
@@ -69,9 +94,21 @@ export default function Home() {
       return
     }
 
-    // 2) validar campos
-    if (!item || !lote) {
-      alert('Preencha item e lote.')
+    // ✅ valida item pelo catálogo
+    if (!itemId) {
+      alert('Selecione um item.')
+      return
+    }
+
+    const itemSelecionado = itens.find((x) => x.id === itemId)
+    if (!itemSelecionado) {
+      alert('Item inválido. Recarregue a página e tente novamente.')
+      return
+    }
+
+    // valida lote
+    if (!lote.trim()) {
+      alert('Preencha o lote.')
       return
     }
 
@@ -80,18 +117,23 @@ export default function Home() {
       return
     }
 
-    // 3) inserir no banco
+    // números (agora que os inputs só aceitam dígitos)
+    const caixasNum = Number(caixas || 0)
+    const qtdPorCaixaNum = Number(qtdPorCaixa || 0)
+    const avulsasNum = Number(unidadesAvulsas || 0)
+
     const { data, error } = await supabase.from('movimentacoes').insert([
       {
-      item,
-      lote,
-      qtd_informada: totalUnidades,
-      caixas: caixasInt,
-      qtd_por_caixa: qtdPorCaixaInt,
-      unidades_avulsas: unidadesAvulsasInt,
-      status: 'PENDENTE',
-      criado_por: userId,
-    },
+        // ✅ salva o NOME do item (opção A)
+        item: itemSelecionado.nome,
+        lote: lote.trim(),
+        qtd_informada: totalUnidades,
+        caixas: caixasNum,
+        qtd_por_caixa: qtdPorCaixaNum,
+        unidades_avulsas: avulsasNum,
+        status: 'PENDENTE',
+        criado_por: userId,
+      },
     ])
 
     console.log('INSERT DATA:', data)
@@ -104,24 +146,23 @@ export default function Home() {
 
     alert('Movimentação salva com sucesso!')
 
-    // 4) limpar formulário
-    setItem('')
+    // limpar formulário
+    setItemId('')
+    setItemBusca('')
     setLote('')
     setCaixas('')
     setQtdPorCaixa('')
     setUnidadesAvulsas('0')
-
   }
 
   // Se não está logado, mostra tela de login
   if (!session) {
     return (
-
       <div className="container">
         <div className="card">
           <h1>Login</h1>
 
-          <input 
+          <input
             className="input"
             type="email"
             placeholder="Email"
@@ -131,6 +172,7 @@ export default function Home() {
           />
 
           <input
+            className="input"
             type="password"
             placeholder="Senha"
             value={password}
@@ -147,74 +189,94 @@ export default function Home() {
   }
 
   // Se está logado, mostra formulário de movimentação
+  const itensFiltrados = itens.filter((x) =>
+    x.nome.toLowerCase().includes(itemBusca.trim().toLowerCase())
+  )
+
   return (
-
     <div>
-    <Menu />
-    <div className="container">
-      <div className="card">
-        <div className="hstack" style={{ marginBottom: 12 }}>
-          <h1 style={{ margin: 0 }}>Registrar Movimentação</h1>
-          <button className="btn" onClick={handleLogout}>Sair</button>
-        </div>
+      <Menu />
 
-        <p style={{ marginTop: 0, color: 'var(--muted)' }}>
-          Status inicial será <b>PENDENTE</b>.
-        </p>
+      <div className="container">
+        <div className="card">
+          <div className="hstack" style={{ marginBottom: 12 }}>
+            <h1 style={{ margin: 0 }}>Registrar Movimentação</h1>
+            <button className="btn" onClick={handleLogout}>Sair</button>
+          </div>
 
+          <p style={{ marginTop: 0, color: 'var(--muted)' }}>
+            Status inicial será <b>PENDENTE</b>.
+          </p>
+
+          {/* ✅ ITEM: BUSCA + SELECT */}
           <label>Item</label>
-          <input
-            value={item}
-            onChange={(e) => setItem(e.target.value)}
-            placeholder="Ex: Item X"
+
+          {/* Futuramente caso tenha muitos produtos, descomentar esse input */}
+         {/* <input
             className="input"
-          />
+            value={itemBusca}
+            onChange={(e) => setItemBusca(e.target.value)}
+            placeholder="Buscar item..."
+          /> */}
+
+          <select
+            className="select"
+            value={itemId}
+            onChange={(e) => setItemId(e.target.value)}
+            style={{ width: '100%', marginTop: 8, marginBottom: 12 }}
+          >
+            <option value="">Selecione um item</option>
+            {itensFiltrados.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.nome}
+              </option>
+            ))}
+          </select>
 
           <label>Lote</label>
           <input
-            value={lote}
-            onChange={(e) => setLote(e.target.value)}
-            placeholder="Ex: Lote Y"
             className="input"
+            value={lote}
+            onChange={(e) => setLote(onlyDigits(e.target.value))}
+            placeholder="Ex: 6000"
           />
 
           <label>Caixas</label>
           <input
+            className="input"
             value={caixas}
-            onChange={(e) => setCaixas(e.target.value)}
+            onChange={(e) => setCaixas(onlyDigits(e.target.value))}
             placeholder="Ex: 4"
             inputMode="numeric"
-            className="input"
           />
 
           <label>Quantidade por caixa</label>
           <input
+            className="input"
             value={qtdPorCaixa}
-            onChange={(e) => setQtdPorCaixa(e.target.value)}
+            onChange={(e) => setQtdPorCaixa(onlyDigits(e.target.value))}
             placeholder="Ex: 12"
             inputMode="numeric"
-            className="input"
           />
 
           <label>Unidades avulsas (opcional)</label>
           <input
+            className="input"
             value={unidadesAvulsas}
-            onChange={(e) => setUnidadesAvulsas(e.target.value)}
+            onChange={(e) => setUnidadesAvulsas(onlyDigits(e.target.value))}
             placeholder="Ex: 3"
             inputMode="numeric"
-            className="input"
           />
 
-          <p style={{ marginTop: 0, opacity: 0.8 }}>
+          <p style={{ marginTop: 0, color: 'var(--muted)' }}>
             <b>Total em unidades:</b> {totalUnidades}
           </p>
 
-
-          <button onClick={handleSalvarMovimentacao} className="btn" style={{ width: '100%' }}>
+          <button className="btn" onClick={handleSalvarMovimentacao} style={{ width: '100%' }}>
             Salvar movimentação
           </button>
         </div>
       </div>
-  </div>
+    </div>
   )
 }
