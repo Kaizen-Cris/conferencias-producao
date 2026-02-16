@@ -228,7 +228,7 @@ export default function MovimentacaoDetalhePage() {
           </div>
 
           <div className="card" style={{ boxShadow: 'none', marginBottom: 12 }}>
-            <div><b>ID:</b> {mov.id}</div>
+            {/*<div><b>ID:</b> {mov.id}</div>*/}
             <div><b>Item:</b> {mov.item}</div>
             <div><b>Lote:</b> {mov.lote}</div>
 
