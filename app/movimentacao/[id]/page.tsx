@@ -27,7 +27,8 @@ type Conf = {
   conferido_por: string
   modo: string
   fase: number
-  criado_em: string
+  conferido_em: string
+  profiles?: { nome: string | null } | null
 }
 
 type Ajuste = {
@@ -38,7 +39,21 @@ type Ajuste = {
   motivo: string
   ajustado_por: string
   tipo: string
-  criado_em: string
+  ajustado_em: string
+  profiles?: { nome: string | null } | null
+}
+
+function fmtDate(value?: string | null) {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString()
+}
+
+function userLabel(name?: string | null, fallbackId?: string) {
+  if (name && name.trim()) return name.trim()
+  if (!fallbackId) return 'Usuário'
+  return `Usuário (${fallbackId.slice(0, 8)}…)`
 }
 
 export default function MovimentacaoDetalhePage() {
@@ -61,9 +76,7 @@ export default function MovimentacaoDetalhePage() {
 
     const { data: movData, error: movErr } = await supabase
       .from('movimentacoes')
-      .select(
-        'id,item,lote,qtd_informada,caixas,qtd_por_caixa,unidades_avulsas,status,criado_por,criado_em'
-      )
+      .select('id,item,lote,qtd_informada,caixas,qtd_por_caixa,unidades_avulsas,status,criado_por,criado_em')
       .eq('id', id)
       .single()
 
@@ -72,7 +85,16 @@ export default function MovimentacaoDetalhePage() {
 
     const { data: confData, error: confErr } = await supabase
       .from('conferencias')
-      .select('id,movimentacao_id,qtd_conferida,conferido_por,modo,fase,criado_em')
+      .select(`
+        id,
+        movimentacao_id,
+        qtd_conferida,
+        conferido_por,
+        modo,
+        fase,
+        conferido_em,
+        profiles:conferido_por ( nome )
+      `)
       .eq('movimentacao_id', id)
       .order('fase', { ascending: true })
 
@@ -81,9 +103,19 @@ export default function MovimentacaoDetalhePage() {
 
     const { data: ajData, error: ajErr } = await supabase
       .from('ajustes')
-      .select('id,movimentacao_id,qtd_antiga,qtd_nova,motivo,ajustado_por,tipo,criado_em')
+      .select(`
+        id,
+        movimentacao_id,
+        qtd_antiga,
+        qtd_nova,
+        motivo,
+        ajustado_por,
+        tipo,
+        ajustado_em,
+        profiles:ajustado_por ( nome )
+      `)
       .eq('movimentacao_id', id)
-      .order('criado_em', { ascending: true })
+      .order('ajustado_em', { ascending: true })
 
     console.log('AJUSTES DETALHE:', ajData, ajErr)
     setAjustes((ajData as Ajuste[]) ?? [])
@@ -99,20 +131,20 @@ export default function MovimentacaoDetalhePage() {
       setAuthLoading(false)
 
       if (!movId) return
-      if (r === 'ADMIN') {
-        carregarTudo(String(movId))
-      }
+
+      if (r === 'ADMIN') carregarTudo(String(movId))
+      else setLoading(false)
     }
 
     init()
   }, [movId])
 
   const timeline = useMemo(() => {
-    const items: Array<{ when: string; label: string; detail?: string }> = []
+    const items: Array<{ when: string | null; label: string; detail?: string }> = []
 
     if (mov) {
       items.push({
-        when: mov.criado_em,
+        when: mov.criado_em ?? null,
         label: 'Movimentação criada',
         detail: `Total: ${mov.qtd_informada} | Status: ${mov.status}`,
       })
@@ -120,25 +152,32 @@ export default function MovimentacaoDetalhePage() {
 
     confs.forEach((c) => {
       items.push({
-        when: c.criado_em,
+        when: c.conferido_em ?? null,
         label: `Conferência (fase ${c.fase})`,
-        detail: `Qtd: ${c.qtd_conferida} | Por: ${c.conferido_por}`,
+        detail: `Qtd: ${c.qtd_conferida} | Por: ${userLabel(c.profiles?.nome ?? null, c.conferido_por)}`,
       })
     })
 
     ajustes.forEach((a) => {
       items.push({
-        when: a.criado_em,
+        when: a.ajustado_em ?? null,
         label: 'Ajuste realizado',
-        detail: `De ${a.qtd_antiga} para ${a.qtd_nova} | Motivo: ${a.motivo}`,
+        detail: `De ${a.qtd_antiga} para ${a.qtd_nova} | Motivo: ${a.motivo} | Por: ${userLabel(
+          a.profiles?.nome ?? null,
+          a.ajustado_por
+        )}`,
       })
     })
 
-    items.sort((x, y) => new Date(x.when).getTime() - new Date(y.when).getTime())
+    items.sort((x, y) => {
+      const ax = x.when ? new Date(x.when).getTime() : 0
+      const ay = y.when ? new Date(y.when).getTime() : 0
+      return ax - ay
+    })
+
     return items
   }, [mov, confs, ajustes])
 
-  // ✅ Tela padrão de carregamento
   if (!movId || authLoading || loading) {
     return (
       <div>
@@ -150,7 +189,6 @@ export default function MovimentacaoDetalhePage() {
     )
   }
 
-  // ✅ Permissão
   if (role !== 'ADMIN') {
     return (
       <div>
@@ -165,7 +203,6 @@ export default function MovimentacaoDetalhePage() {
     )
   }
 
-  // ✅ Não encontrado
   if (!mov) {
     return (
       <div>
@@ -190,7 +227,6 @@ export default function MovimentacaoDetalhePage() {
             </button>
           </div>
 
-          {/* RESUMO */}
           <div className="card" style={{ boxShadow: 'none', marginBottom: 12 }}>
             <div><b>ID:</b> {mov.id}</div>
             <div><b>Item:</b> {mov.item}</div>
@@ -200,7 +236,7 @@ export default function MovimentacaoDetalhePage() {
               <b>Status:</b> <StatusBadge status={mov.status} />
             </div>
 
-            <div><b>Criado em:</b> {new Date(mov.criado_em).toLocaleString()}</div>
+            <div><b>Criado em:</b> {fmtDate(mov.criado_em)}</div>
 
             <hr style={{ border: 0, borderTop: '1px solid var(--border)', margin: '12px 0' }} />
 
@@ -210,40 +246,38 @@ export default function MovimentacaoDetalhePage() {
             <div><b>Total (un):</b> {mov.qtd_informada}</div>
           </div>
 
-          {/* CONFERÊNCIAS */}
           <h2 style={{ marginTop: 0 }}>Conferências</h2>
-          {confs.length === 0 && (
-            <p style={{ color: 'var(--muted)' }}>Nenhuma conferência registrada.</p>
-          )}
+
+          {confs.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhuma conferência registrada.</p>}
 
           {confs.length > 0 && (
             <table className="table" style={{ marginBottom: 16 }}>
               <thead>
                 <tr>
                   <th>Fase</th>
-                  <th>Qtd</th>
+                  <th>Quantidade</th>
                   <th>Conferido por</th>
-                  <th>Quando</th>
+                  <th>Data</th>
                 </tr>
               </thead>
               <tbody>
                 {confs.map((c) => (
                   <tr key={c.id}>
-                    <td style={{ padding: '8px 0' }}>{c.fase}</td>
+                    <td>{c.fase}</td>
                     <td>{c.qtd_conferida}</td>
-                    <td style={{ fontFamily: 'monospace' }}>{c.conferido_por}</td>
-                    <td>{new Date(c.criado_em).toLocaleString()}</td>
+                    <td style={{ fontSize: 13 }}>
+                      {userLabel(c.profiles?.nome ?? null, c.conferido_por)}
+                    </td>
+                    <td>{fmtDate(c.conferido_em)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
 
-          {/* AJUSTES */}
           <h2 style={{ marginTop: 0 }}>Ajustes</h2>
-          {ajustes.length === 0 && (
-            <p style={{ color: 'var(--muted)' }}>Nenhum ajuste registrado.</p>
-          )}
+
+          {ajustes.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum ajuste registrado.</p>}
 
           {ajustes.length > 0 && (
             <table className="table" style={{ marginBottom: 16 }}>
@@ -252,23 +286,26 @@ export default function MovimentacaoDetalhePage() {
                   <th>De</th>
                   <th>Para</th>
                   <th>Motivo</th>
-                  <th>Quando</th>
+                  <th>Ajustado por</th>
+                  <th>Data</th>
                 </tr>
               </thead>
               <tbody>
                 {ajustes.map((a) => (
                   <tr key={a.id}>
-                    <td style={{ padding: '8px 0' }}>{a.qtd_antiga}</td>
+                    <td>{a.qtd_antiga}</td>
                     <td>{a.qtd_nova}</td>
                     <td>{a.motivo}</td>
-                    <td>{new Date(a.criado_em).toLocaleString()}</td>
+                    <td style={{ fontSize: 13 }}>
+                      {userLabel(a.profiles?.nome ?? null, a.ajustado_por)}
+                    </td>
+                    <td>{fmtDate(a.ajustado_em)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
 
-          {/* TIMELINE */}
           <h2 style={{ marginTop: 0 }}>Linha do tempo</h2>
           <div className="card" style={{ boxShadow: 'none' }}>
             {timeline.map((t, idx) => (
@@ -279,7 +316,7 @@ export default function MovimentacaoDetalhePage() {
                   borderBottom: idx === timeline.length - 1 ? 'none' : '1px solid var(--border)',
                 }}
               >
-                <div><b>{new Date(t.when).toLocaleString()}</b> — {t.label}</div>
+                <div><b>{fmtDate(t.when)}</b> — {t.label}</div>
                 {t.detail && <div style={{ color: 'var(--muted)' }}>{t.detail}</div>}
               </div>
             ))}
