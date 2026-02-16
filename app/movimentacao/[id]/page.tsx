@@ -297,7 +297,7 @@ export default function MovimentacaoDetalhePage() {
                     <td>{a.qtd_nova}</td>
                     <td>{a.motivo}</td>
                     <td style={{ fontSize: 13 }}>
-                      {userLabel(a.profiles?.nome ?? null, a.ajustado_por)}
+                      {userLabel(a.profiles?.[0]?.nome ?? null, a.ajustado_por)}
                     </td>
                     <td>{fmtDate(a.ajustado_em)}</td>
                   </tr>
