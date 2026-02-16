@@ -20,6 +20,9 @@ type Mov = {
   criado_em: string
 }
 
+// ✅ suporta 2 formatos: objeto OU array
+type ProfileJoin = { nome: string | null } | { nome: string | null }[] | null | undefined
+
 type Conf = {
   id: string
   movimentacao_id: string
@@ -28,7 +31,7 @@ type Conf = {
   modo: string
   fase: number
   conferido_em: string
-  profiles?: { nome: string | null }[] | null
+  profiles?: ProfileJoin
 }
 
 type Ajuste = {
@@ -40,7 +43,7 @@ type Ajuste = {
   ajustado_por: string
   tipo: string
   ajustado_em: string
-  profiles?: { nome: string | null }[] | null
+  profiles?: ProfileJoin
 }
 
 function fmtDate(value?: string | null) {
@@ -54,6 +57,13 @@ function userLabel(name?: string | null, fallbackId?: string) {
   if (name && name.trim()) return name.trim()
   if (!fallbackId) return 'Usuário'
   return `Usuário (${fallbackId.slice(0, 8)}…)`
+}
+
+// ✅ pega nome tanto se vier como objeto quanto se vier como array
+function getProfileName(p?: ProfileJoin): string | null {
+  if (!p) return null
+  if (Array.isArray(p)) return p?.[0]?.nome?.trim() || null
+  return p?.nome?.trim() || null
 }
 
 export default function MovimentacaoDetalhePage() {
@@ -98,8 +108,9 @@ export default function MovimentacaoDetalhePage() {
       .eq('movimentacao_id', id)
       .order('fase', { ascending: true })
 
-    console.log('CONF DETALHE:', confData, confErr)
-    setConfs((confData ?? []) as Conf[])
+    console.log('CONF DETALHE (RAW):', confData, confErr)
+    // ✅ importante: tipa o estado, mas não força formato de profiles aqui
+    setConfs((confData ?? []) as unknown as Conf[])
 
     const { data: ajData, error: ajErr } = await supabase
       .from('ajustes')
@@ -117,8 +128,8 @@ export default function MovimentacaoDetalhePage() {
       .eq('movimentacao_id', id)
       .order('ajustado_em', { ascending: true })
 
-    console.log('AJUSTES DETALHE:', ajData, ajErr)
-    setAjustes((ajData ?? []) as Ajuste[])
+    console.log('AJUSTES DETALHE (RAW):', ajData, ajErr)
+    setAjustes((ajData ?? []) as unknown as Ajuste[])
 
     setLoading(false)
   }
@@ -154,7 +165,7 @@ export default function MovimentacaoDetalhePage() {
       items.push({
         when: c.conferido_em ?? null,
         label: `Conferência (fase ${c.fase})`,
-        detail: `Qtd: ${c.qtd_conferida} | Por: ${userLabel(c.profiles?.[0]?.nome ?? null, c.conferido_por)}`,
+        detail: `Qtd: ${c.qtd_conferida} | Por: ${userLabel(getProfileName(c.profiles), c.conferido_por)}`,
       })
     })
 
@@ -163,7 +174,7 @@ export default function MovimentacaoDetalhePage() {
         when: a.ajustado_em ?? null,
         label: 'Ajuste realizado',
         detail: `De ${a.qtd_antiga} para ${a.qtd_nova} | Motivo: ${a.motivo} | Por: ${userLabel(
-          a.profiles?.[0]?.nome ?? null,
+          getProfileName(a.profiles),
           a.ajustado_por
         )}`,
       })
@@ -228,7 +239,6 @@ export default function MovimentacaoDetalhePage() {
           </div>
 
           <div className="card" style={{ boxShadow: 'none', marginBottom: 12 }}>
-            {/*<div><b>ID:</b> {mov.id}</div>*/}
             <div><b>Item:</b> {mov.item}</div>
             <div><b>Lote:</b> {mov.lote}</div>
 
@@ -268,7 +278,7 @@ export default function MovimentacaoDetalhePage() {
                     <td>{c.fase}</td>
                     <td>{c.qtd_conferida}</td>
                     <td style={{ fontSize: 13 }}>
-                      {userLabel(c.profiles?.[0]?.nome ?? null, c.conferido_por)}
+                      {userLabel(getProfileName(c.profiles), c.conferido_por)}
                     </td>
                     <td>{fmtDate(c.conferido_em)}</td>
                   </tr>
@@ -299,7 +309,7 @@ export default function MovimentacaoDetalhePage() {
                     <td>{a.qtd_nova}</td>
                     <td>{a.motivo}</td>
                     <td style={{ fontSize: 13 }}>
-                      {userLabel(a.profiles?.[0]?.nome ?? null, a.ajustado_por)}
+                      {userLabel(getProfileName(a.profiles), a.ajustado_por)}
                     </td>
                     <td>{fmtDate(a.ajustado_em)}</td>
                   </tr>
