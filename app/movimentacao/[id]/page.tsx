@@ -99,7 +99,7 @@ export default function MovimentacaoDetalhePage() {
       .order('fase', { ascending: true })
 
     console.log('CONF DETALHE:', confData, confErr)
-    setConfs((confData as Conf[]) ?? [])
+    setConfs((confData ?? []) as Conf[])
 
     const { data: ajData, error: ajErr } = await supabase
       .from('ajustes')
@@ -118,7 +118,7 @@ export default function MovimentacaoDetalhePage() {
       .order('ajustado_em', { ascending: true })
 
     console.log('AJUSTES DETALHE:', ajData, ajErr)
-    setAjustes((ajData as Ajuste[]) ?? [])
+    setAjustes((ajData ?? []) as Ajuste[])
 
     setLoading(false)
   }
@@ -154,7 +154,7 @@ export default function MovimentacaoDetalhePage() {
       items.push({
         when: c.conferido_em ?? null,
         label: `Conferência (fase ${c.fase})`,
-        detail: `Qtd: ${c.qtd_conferida} | Por: ${userLabel(c.profiles?.nome ?? null, c.conferido_por)}`,
+        detail: `Qtd: ${c.qtd_conferida} | Por: ${userLabel(c.profiles?.[0]?.nome ?? null, c.conferido_por)}`,
       })
     })
 
@@ -163,7 +163,7 @@ export default function MovimentacaoDetalhePage() {
         when: a.ajustado_em ?? null,
         label: 'Ajuste realizado',
         detail: `De ${a.qtd_antiga} para ${a.qtd_nova} | Motivo: ${a.motivo} | Por: ${userLabel(
-          a.profiles?.nome ?? null,
+          a.profiles?.[0]?.nome ?? null,
           a.ajustado_por
         )}`,
       })
