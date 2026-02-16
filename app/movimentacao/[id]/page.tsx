@@ -28,7 +28,7 @@ type Conf = {
   modo: string
   fase: number
   conferido_em: string
-  profiles?: { nome: string | null } | null
+  profiles?: { nome: string | null }[] | null
 }
 
 type Ajuste = {
@@ -40,7 +40,7 @@ type Ajuste = {
   ajustado_por: string
   tipo: string
   ajustado_em: string
-  profiles?: { nome: string | null } | null
+  profiles?: { nome: string | null }[] | null
 }
 
 function fmtDate(value?: string | null) {
