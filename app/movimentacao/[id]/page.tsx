@@ -266,7 +266,7 @@ export default function MovimentacaoDetalhePage() {
                     <td>{c.fase}</td>
                     <td>{c.qtd_conferida}</td>
                     <td style={{ fontSize: 13 }}>
-                      {userLabel(c.profiles?.nome ?? null, c.conferido_por)}
+                      {userLabel(c.profiles?.[0]?.nome ?? null, c.conferido_por)}
                     </td>
                     <td>{fmtDate(c.conferido_em)}</td>
                   </tr>
