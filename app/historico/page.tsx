@@ -149,7 +149,33 @@ export default function HistoricoPage() {
           )}
 
           {!loading && lista.length > 0 && (
-            <table className="table">
+            <>
+              {/* MOBILE: cards */}
+              <div className="show-mobile">
+              {lista.map((m) => (
+                <div
+                  key={m.id}
+                  className="list-item"
+                  onClick={() => router.push(`/movimentacao/${m.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="top">
+                    <div style={{ fontWeight: 700 }}>{m.item}</div>
+                    <StatusBadge status={m.status} />
+                  </div>
+
+                  <div className="meta">
+                    <div><b>Lote:</b> {m.lote}</div>
+                    <div><b>Total:</b> {m.qtd_informada} un</div>
+                    <div><b>Data:</b> {new Date(m.criado_em).toLocaleString()}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* DESKTOP: table */}
+            <div className="hide-mobile">
+              <table className="table">
               <thead>
                 <tr>
                   <th>Item</th>
@@ -174,8 +200,10 @@ export default function HistoricoPage() {
                     <td>{new Date(m.criado_em).toLocaleString()}</td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
+                </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>

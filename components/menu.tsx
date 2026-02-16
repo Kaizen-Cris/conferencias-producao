@@ -1,68 +1,47 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../lib/supabase'
-import { getMyRole } from '../lib/auth'
 
 export default function Menu() {
   const router = useRouter()
-  const [role, setRole] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
 
-  useEffect(() => {
-    async function loadRole() {
-      const r = await getMyRole()
-      setRole(r)
-    }
-    loadRole()
-  }, [])
-
-  async function logout() {
-    await supabase.auth.signOut()
-    router.push('/')
+  function go(path: string) {
+    setOpen(false)
+    router.push(path)
   }
 
-  if (!role) return null
-
   return (
-
+    <>
       <div className="menu-bar">
-        <div className="container" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {(role === 'OPERADOR' || role === 'ADMIN') && (
-            <button className="btn" onClick={() => router.push('/')}>
-              Registrar
-            </button>
-          )}
+        <div className="menu-title">Conferências</div>
 
-          {(role === 'CONFERENTE' || role === 'ADMIN') && (
-            <button className="btn" onClick={() => router.push('/pendentes')}>
-              Pendentes
-            </button>
-          )}
+        <button
+          className="menu-toggle"
+          onClick={() => setOpen(!open)}
+        >
+          ☰
+        </button>
 
-          {(role === 'OPERADOR' || role === 'ADMIN') && (
-            <button className="btn" onClick={() => router.push('/divergencias')}>
-              Divergências
-            </button>
-          )}
-
-          {role === 'ADMIN' && (
-            <button className="btn" onClick={() => router.push('/historico')}>
-              Histórico
-            </button>
-          )}
-
-          {role === 'ADMIN' && (
-            <button className="btn" onClick={() => router.push('/dashboard')}>
-              Dashboard
-            </button>
-          )}
-
-
-          <div style={{ marginLeft: 'auto' }}>
-            <button className="btn" onClick={logout}>Sair</button>
-          </div>
+        <div className="menu-desktop">
+          <button onClick={() => go('/')}>Registrar</button>
+          <button onClick={() => go('/pendentes')}>Pendentes</button>
+          <button onClick={() => go('/divergencias')}>Divergências</button>
+          <button onClick={() => go('/historico')}>Histórico</button>
+          <button onClick={() => go('/dashboard')}>Dashboard</button>
         </div>
       </div>
+
+      {open && (
+        <div className="menu-mobile">
+          <button onClick={() => go('/')}>Registrar</button>
+          <button onClick={() => go('/pendentes')}>Pendentes</button>
+          <button onClick={() => go('/divergencias')}>Divergências</button>
+          <button onClick={() => go('/historico')}>Histórico</button>
+          <button onClick={() => go('/dashboard')}>Dashboard</button>
+        </div>
+      )}
+    </>
   )
 }

@@ -240,10 +240,12 @@ export default function MovimentacaoDetalhePage() {
 
             <hr style={{ border: 0, borderTop: '1px solid var(--border)', margin: '12px 0' }} />
 
-            <div><b>Caixas:</b> {mov.caixas ?? 0}</div>
-            <div><b>Qtd/caixa:</b> {mov.qtd_por_caixa ?? 0}</div>
-            <div><b>Avulsas:</b> {mov.unidades_avulsas ?? 0}</div>
-            <div><b>Total (un):</b> {mov.qtd_informada}</div>
+            <div className="grid-2" style={{ marginTop: 10 }}>
+              <div className="list-item"><b>Caixas</b><div>{mov.caixas ?? 0}</div></div>
+              <div className="list-item"><b>Qtd/caixa</b><div>{mov.qtd_por_caixa ?? 0}</div></div>
+              <div className="list-item"><b>Avulsas</b><div>{mov.unidades_avulsas ?? 0}</div></div>
+              <div className="list-item"><b>Total (un)</b><div>{mov.qtd_informada}</div></div>
+            </div>
           </div>
 
           <h2 style={{ marginTop: 0 }}>Conferências</h2>

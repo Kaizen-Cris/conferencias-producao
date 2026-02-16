@@ -18,11 +18,15 @@
     --foreground: #ededed;
   }
 }
-
+* {
+  box-sizing: border-box;
+}
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  overflow-x: hidden;
 }
 
 :root{
@@ -47,9 +51,9 @@ body{
 }
 
 .container{
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px;
+  max-width: 1000px;
+  margin: auto;
+  padding: 16px;
 }
 
 .card{
@@ -133,12 +137,6 @@ body{
   cursor: pointer;
 }
 
-.menu-bar{
-  border-bottom: 1px solid var(--border);
-  background: white;
-  box-shadow: 0 6px 16px rgba(17,24,39,.06);
-}
-
 .grid-cards{
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -164,4 +162,125 @@ body{
   font-weight: 700;
   margin-top: 6px;
 }
+
+/* ===== Mobile-first helpers ===== */
+.hide-mobile { display: block; }
+.show-mobile { display: none; }
+
+@media (max-width: 760px) {
+  .hide-mobile { display: none; }
+  .show-mobile { display: block; }
+  .grid-2 { grid-template-columns: 1fr; }
+
+  .container { padding: 14px; }
+  .card { padding: 14px; border-radius: 14px; }
+  h1 { font-size: 20px; }
+  h2 { font-size: 16px; }
+
+  .btn { width: 100%; padding: 12px 14px; }
+  .input, .select, .textarea { padding: 12px 12px; font-size: 16px; } /* 16px evita zoom no iPhone */
+  .hstack { flex-direction: column; align-items: stretch; gap: 10px; }
+}
+
+/* lista tipo app */
+.list { display: grid; gap: 10px; }
+.list-item {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--surface);
+}
+.list-item .top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.list-item .meta {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.list-item .meta b { color: var(--text); font-weight: 600; }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ===== MENU ===== */
+
+.menu-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.menu-title {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.menu-desktop {
+  display: flex;
+  gap: 10px;
+}
+
+.menu-desktop button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.menu-mobile {
+  display: none;
+}
+
+/* ===== MOBILE ===== */
+
+@media (max-width: 900px) {
+  .menu-desktop {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .menu-mobile {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .menu-mobile button {
+    padding: 14px 16px;
+    border: none;
+    background: none;
+    text-align: left;
+    border-top: 1px solid var(--border);
+    font-size: 16px;
+  }
+}
+
+
 
