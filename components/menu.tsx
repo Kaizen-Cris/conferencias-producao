@@ -27,6 +27,7 @@ export default function Menu() {
       { label: 'Divergências', path: '/divergencias', roles: ['OPERADOR', 'ADMIN'] },
       { label: 'Histórico', path: '/historico', roles: ['ADMIN'] },
       { label: 'Dashboard', path: '/dashboard', roles: ['ADMIN'] },
+      { label: 'Usuários', path: '/usuarios', roles: ['ADMIN'] },
     ],
     []
   )
@@ -76,10 +77,11 @@ export default function Menu() {
             <button
               key={i.path}
               onClick={() => go(i.path)}
-              className={pathname === i.path ? 'menu-active' : undefined}
+              className={`menu-item ${pathname === i.path ? 'menu-item-active' : ''}`}
             >
               {i.label}
             </button>
+
           ))}
 
           <button className="logout-btn" onClick={handleLogout}>

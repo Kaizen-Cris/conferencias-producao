@@ -12,6 +12,9 @@ export default function Home() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [session, setSession] = useState<any>(null)
+  const [authMsg, setAuthMsg] = useState<string | null>(null)
+  const [authLoading, setAuthLoading] = useState(false)
+  
 
   // form movimentação
   const [lote, setLote] = useState('')
@@ -72,13 +75,43 @@ export default function Home() {
   }, [session])
 
   async function handleLogin() {
+    setAuthMsg(null)
+
+    // validações básicas
+    if (!email.trim() || !password.trim()) {
+      setAuthMsg('Preencha email e senha.')
+      return
+    }
+
+    setAuthLoading(true)
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password,
     })
+    setAuthLoading(false)
 
-    console.log('LOGIN DATA:', data)
-    console.log('LOGIN ERROR:', error)
+    if (error) {
+      const msg = (error.message || '').toLowerCase()
+
+      // Supabase tende a não diferenciar usuário inexistente vs senha errada
+      if (msg.includes('invalid login credentials')) {
+        setAuthMsg('Email ou senha inválidos.')
+        return
+      }
+
+      if (msg.includes('email not confirmed')) {
+        setAuthMsg('Seu email ainda não foi confirmado. Verifique sua caixa de entrada.')
+        return
+      }
+
+      setAuthMsg(`Erro ao entrar: ${error.message}`)
+      return
+    }
+
+    // sucesso
+    if (data.session) {
+      setAuthMsg(null)
+    }
   }
 
   async function handleLogout() {
@@ -179,10 +212,14 @@ export default function Home() {
             onChange={(e) => setPassword(e.target.value)}
             style={{ display: 'block', marginBottom: 10, width: '100%' }}
           />
-
-          <button className="btn" onClick={handleLogin} style={{ width: '100%' }}>
-            Entrar
+          <button className="btn" onClick={handleLogin} disabled={authLoading}>
+            {authLoading ? 'Entrando...' : 'Entrar'}
           </button>
+          
+          {authMsg && <p className="authMsg">{authMsg}</p>}
+
+
+          
         </div>
       </div>
     )
