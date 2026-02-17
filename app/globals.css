@@ -92,14 +92,20 @@ label{
   font-size: 14px;
 }
 
-input, select, textarea{
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: #fff;
-  outline: none;
+input, select, textarea,
+.input, .select, .textarea{
+  padding: 12px 12px;
+  font-size: 15px;
+}  
+
+/* só iOS (aprox) volta pra 16px pra evitar zoom */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea,
+  .input, .select, .textarea{
+    font-size: 16px;
+  }
 }
+
 
 input:focus, select:focus, textarea:focus{
   border-color: rgba(0,0,0,.28);
@@ -583,3 +589,48 @@ button:disabled{ opacity: .6; cursor: not-allowed; }
     padding-top: 6px !important;
   }
 }
+
+.filters-row{
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+@media (max-width: 760px){
+  .filters-row{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .filters-row .select,
+  .filters-row .input,
+  .filters-row .btn,
+  .filters-row button{
+    width: 100%;
+  }
+}
+
+.list-item .top > div{
+  min-width: 0;
+}
+
+.list-item .top{
+  gap: 10px;
+}
+
+.list-item .top div{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+@media (max-width: 760px){
+  .list-item .top div{
+    max-width: 60%;
+  }
+}
+

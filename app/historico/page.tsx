@@ -116,12 +116,11 @@ export default function HistoricoPage() {
             <button className="btn" onClick={carregar}>Atualizar</button>
           </div>
 
-          <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+          <div className="filters-row">
             <select
               className="select"
               value={statusFiltro}
               onChange={(e) => setStatusFiltro(e.target.value)}
-              style={{ maxWidth: 220 }}
             >
               <option value="TODOS">Todos</option>
               <option value="PENDENTE">Pendente</option>
@@ -135,7 +134,7 @@ export default function HistoricoPage() {
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar por item ou lote"
-              style={{ flex: 1, minWidth: 240 }}
+              style={{ flex: 1}}
             />
 
             {/* ✅ Busca só no front: botão reaplica sem ter que mexer em backend */}
