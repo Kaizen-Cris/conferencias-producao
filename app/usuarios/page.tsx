@@ -158,6 +158,7 @@ export default function UsuariosPage() {
     setMsg('Usuário criado com sucesso!')
     setEmail('')
     setPassword('')
+    setNome('')
     setNewRole('OPERADOR')
     setShowPass(false)
 
