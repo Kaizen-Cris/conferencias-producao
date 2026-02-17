@@ -351,7 +351,6 @@ button:disabled, .btn:disabled{ opacity: .6; cursor: not-allowed; }
   .menu-mobile button{
     padding: 12px 14px;
     border: none;
-    background: none;
     text-align: left;
     border-top: 1px solid var(--border);
     font-size: var(--fs-base);
