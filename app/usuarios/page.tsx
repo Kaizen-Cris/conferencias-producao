@@ -29,6 +29,7 @@ export default function UsuariosPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [nome, setNome] = useState('')
   const [newRole, setNewRole] = useState<Role>('OPERADOR')
   const [msg, setMsg] = useState<string | null>(null)
 
@@ -232,14 +233,27 @@ export default function UsuariosPage() {
               </div>
             </div>
 
-            <div className="uField">
-              <label>Perfil</label>
-              <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
-                <option value="OPERADOR">OPERADOR</option>
-                <option value="CONFERENTE">CONFERENTE</option>
-                <option value="ADMIN">ADMIN</option>
-              </select>
-            </div>
+            
+          </div>
+
+          <div className="uForm">
+              <div className="uField">
+                <label>Nome</label>
+                <input
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  placeholder="ex: João"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="uField">
+                <label>Perfil</label>
+                <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
+                  <option value="OPERADOR">OPERADOR</option>
+                  <option value="CONFERENTE">CONFERENTE</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+              </div>
           </div>
 
           <div className="uActions">
@@ -253,6 +267,7 @@ export default function UsuariosPage() {
               onClick={() => {
                 setEmail('')
                 setPassword('')
+                setNome('')
                 setNewRole('OPERADOR')
                 setMsg(null)
                 setShowPass(false)

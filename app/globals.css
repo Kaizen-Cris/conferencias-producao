@@ -437,7 +437,7 @@ button:disabled, .btn:disabled{ opacity: .6; cursor: not-allowed; }
 
 .uForm{
   display:grid;
-  grid-template-columns: 1.4fr 1fr 220px;
+  grid-template-columns: 1.4fr 1.2fr;
   gap:12px;
   margin-top:10px;
 }
