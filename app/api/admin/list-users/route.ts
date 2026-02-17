@@ -1,57 +1,55 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '../_utils'
+
+type Role = 'OPERADOR' | 'CONFERENTE' | 'ADMIN'
 
 export async function GET(req: Request) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const gate = await requireAdmin(req)
+    if ('error' in gate) return gate.error
 
-    // token de quem chamou (admin logado)
-    const auth = req.headers.get('authorization') || ''
-    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
-    if (!token) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
+    const { admin } = gate
 
-    const publicClient = createClient(supabaseUrl, anonKey)
-    const { data: userData } = await publicClient.auth.getUser(token)
-    if (!userData?.user) return NextResponse.json({ error: 'Sessão inválida.' }, { status: 401 })
+    // lista usuários do Auth
+    const { data, error } = await admin.auth.admin.listUsers({ perPage: 200, page: 1 })
+    if (error) {
+      return NextResponse.json({ error: error.message || 'Falha ao listar usuários.' }, { status: 500 })
+    }
 
-    const admin = createClient(supabaseUrl, serviceKey)
+    const authUsers = data?.users || []
+    const ids = authUsers.map((u) => u.id)
 
-    // checa se quem chamou é ADMIN
-    const { data: me } = await admin
-      .from('profiles')
-      .select('role')
-      .eq('id', userData.user.id)
-      .single()
-
-    if (me?.role !== 'ADMIN') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 })
-
-    // pega profiles (role + is_disabled)
-    const { data: profiles, error: profErr } = await admin
+    // pega roles/is_disabled do profiles
+    const { data: profs, error: profErr } = await admin
       .from('profiles')
       .select('id, role, is_disabled')
+      .in('id', ids)
 
-    if (profErr) return NextResponse.json({ error: profErr.message }, { status: 400 })
+    if (profErr) {
+      return NextResponse.json({ error: 'Falha ao ler profiles.' }, { status: 500 })
+    }
 
-    // pega usuários do Auth (email)
-    const { data: usersRes, error: usersErr } = await admin.auth.admin.listUsers({ perPage: 1000 })
-    if (usersErr) return NextResponse.json({ error: usersErr.message }, { status: 400 })
+    const profMap = new Map<string, { role: Role; is_disabled: boolean }>()
+    ;(profs || []).forEach((p: any) => {
+      profMap.set(p.id, {
+        role: (p.role as Role) || 'OPERADOR',
+        is_disabled: Boolean(p.is_disabled),
+      })
+    })
 
-    const byId = new Map((profiles ?? []).map(p => [p.id, p]))
-    const merged = (usersRes.users ?? []).map(u => {
-      const p = byId.get(u.id)
+    const users = authUsers.map((u) => {
+      const p = profMap.get(u.id)
       return {
         id: u.id,
-        email: u.email ?? '',
-        role: p?.role ?? 'OPERADOR',
-        is_disabled: p?.is_disabled ?? false,
-        created_at: u.created_at ?? null,
+        email: u.email || '',
+        role: p?.role || 'OPERADOR',
+        is_disabled: p?.is_disabled || false,
       }
-    }).sort((a, b) => a.email.localeCompare(b.email))
+    })
 
-    return NextResponse.json({ users: merged })
-  } catch {
+    return NextResponse.json({ ok: true, users })
+  } catch (e: any) {
+    console.error('[list-users] ERRO:', e?.message || e)
     return NextResponse.json({ error: 'Erro interno.' }, { status: 500 })
   }
 }

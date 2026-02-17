@@ -27,36 +27,72 @@ export default function PendentesPage() {
 
   async function carregarPendentes() {
     setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('movimentacoes')
+        .select('id,item,lote,qtd_informada,status,criado_em')
+        .in('status', ['PENDENTE', 'RECONFERIR'])
+        .order('criado_em', { ascending: false })
+        .limit(200)
 
-    const { data, error } = await supabase
-      .from('movimentacoes')
-      .select('id,item,lote,qtd_informada,status,criado_em')
-      .in('status', ['PENDENTE', 'RECONFERIR'])
-      .order('criado_em', { ascending: false })
-      .limit(200)
+      console.log('PENDENTES DATA:', data)
+      console.log('PENDENTES ERROR:', error)
 
-    console.log('PENDENTES DATA:', data)
-    console.log('PENDENTES ERROR:', error)
+      if (error) throw error
 
-    setLista((data as Mov[]) ?? [])
-    setLoading(false)
+      setLista((data as Mov[]) ?? [])
+    } catch (e) {
+      console.log('PENDENTES FETCH ERROR:', e)
+      setLista([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
+    let mounted = true
+
     async function init() {
       setAuthLoading(true)
-      const r = await getMyRole()
-      setRole(r)
-      setAuthLoading(false)
+      try {
+        const r = await getMyRole()
+        if (!mounted) return
+        setRole(r)
+      } finally {
+        if (!mounted) return
+        setAuthLoading(false)
+      }
 
-      if (r === 'CONFERENTE' || r === 'ADMIN') {
-        carregarPendentes()
-      } else {
-        setLoading(false)
+      if (!mounted) return
+
+      if (role === 'CONFERENTE' || role === 'ADMIN') {
+        // ⚠️ role aqui pode estar desatualizado porque setRole é async
+        // então usamos "r" diretamente abaixo (ver correção)
       }
     }
 
-    init()
+    // ✅ correção do detalhe acima: usa o valor retornado (r) pra decidir
+    ;(async () => {
+      setAuthLoading(true)
+      try {
+        const r = await getMyRole()
+        if (!mounted) return
+        setRole(r)
+
+        if (r === 'CONFERENTE' || r === 'ADMIN') {
+          await carregarPendentes()
+        } else {
+          setLoading(false)
+        }
+      } finally {
+        if (!mounted) return
+        setAuthLoading(false)
+      }
+    })()
+
+    return () => {
+      mounted = false
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -99,7 +135,6 @@ export default function PendentesPage() {
 
           {lista.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum pendente.</p>}
 
-          {/* ===== MOBILE: cards (NÃO estoura tela) ===== */}
           <div className="show-mobile">
             <div className="list">
               {lista.map((m) => (
@@ -117,17 +152,13 @@ export default function PendentesPage() {
                   <div className="meta">
                     <div className="wrap"><b>Lote:</b> {m.lote}</div>
                     <div><b>Total:</b> {m.qtd_informada} un</div>
-                    <div><b>Criado:</b> {new Date(m.criado_em).toLocaleString()}</div>
-                    {/*<div style={{ color: 'var(--muted)', fontSize: 12 }}>
-                      <b>ID:</b> <span className="wrap">{m.id}</span>
-                    </div>*/}
+                    <div><b>Criado:</b> {new Date(m.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ===== DESKTOP: table ===== */}
           <div className="hide-mobile">
             {lista.length > 0 && (
               <table className="table">
@@ -152,13 +183,14 @@ export default function PendentesPage() {
                       <td>{m.lote}</td>
                       <td>{m.qtd_informada}</td>
                       <td><StatusBadge status={m.status} /></td>
-                      <td>{new Date(m.criado_em).toLocaleString()}</td>
+                      <td>{new Date(m.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
           </div>
+
         </div>
       </div>
     </div>

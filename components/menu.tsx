@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '../lib/supabase'
-import { getMyRole } from '../lib/auth'
+import { getMyRole, clearRoleCache } from '../lib/auth'
+
 
 type Role = 'ADMIN' | 'CONFERENTE' | 'OPERADOR' | null
 
@@ -22,7 +23,7 @@ export default function Menu() {
   // abas e permissões (ajuste se quiser)
   const items: NavItem[] = useMemo(
     () => [
-      { label: 'Registrar', path: '/', roles: ['OPERADOR', 'ADMIN'] },
+      { label: 'Registrar', path: '/registrar', roles: ['OPERADOR', 'ADMIN'] },
       { label: 'Pendentes', path: '/pendentes', roles: ['CONFERENTE', 'ADMIN'] },
       { label: 'Divergências', path: '/divergencias', roles: ['OPERADOR', 'ADMIN'] },
       { label: 'Histórico', path: '/historico', roles: ['ADMIN'] },
@@ -60,6 +61,7 @@ export default function Menu() {
   async function handleLogout() {
     setOpen(false)
     await supabase.auth.signOut()
+    clearRoleCache()
     router.push('/')
   }
 
