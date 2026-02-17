@@ -377,6 +377,18 @@ button:disabled{ opacity: .6; cursor: not-allowed; }
   width: auto;
 }
 
+.login-actions{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.login-actions .btn{
+  width: auto; /* evita ocupar 100% no desktop */
+}
+
 /* =========================================================
    USERS PAGE (versão final: u*)
 ========================================================= */
@@ -501,6 +513,22 @@ button:disabled{ opacity: .6; cursor: not-allowed; }
 .uBtnDanger,
 .uBtnOk{ min-width: 110px; }
 
+.btn-link{
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  color: #2563eb;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-link:hover{
+  text-decoration: underline;
+}
+
+
+
 /* =========================================================
    RESPONSIVE
 ========================================================= */
@@ -543,5 +571,15 @@ button:disabled{ opacity: .6; cursor: not-allowed; }
   .uRow .uBtnDanger,
   .uRow .uBtnOk{
     width:100%;
+  }
+
+  .login-actions{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .login-actions .btn-link{
+    text-align: center;
+    padding-top: 6px !important;
   }
 }

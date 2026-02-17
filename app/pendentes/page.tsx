@@ -118,9 +118,9 @@ export default function PendentesPage() {
                     <div className="wrap"><b>Lote:</b> {m.lote}</div>
                     <div><b>Total:</b> {m.qtd_informada} un</div>
                     <div><b>Criado:</b> {new Date(m.criado_em).toLocaleString()}</div>
-                    <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+                    {/*<div style={{ color: 'var(--muted)', fontSize: 12 }}>
                       <b>ID:</b> <span className="wrap">{m.id}</span>
-                    </div>
+                    </div>*/}
                   </div>
                 </div>
               ))}

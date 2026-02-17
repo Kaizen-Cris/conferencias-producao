@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import Menu from '../components/menu'
 import { onlyDigits } from '../lib/onlyDigits'
+import { useRouter } from 'next/navigation'
+
 
 type ItemRow = { id: string; nome: string }
 
@@ -14,6 +16,8 @@ export default function Home() {
   const [session, setSession] = useState<any>(null)
   const [authMsg, setAuthMsg] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(false)
+  const router = useRouter()
+
   
 
   // form movimentação
@@ -114,6 +118,21 @@ export default function Home() {
     }
   }
 
+  async function handleForgot() {
+    if (!email.trim()) {
+      setAuthMsg('Informe seu email para receber o link.')
+      return
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/resetar-senha`,
+    })
+
+    if (error) setAuthMsg(`Erro: ${error.message}`)
+    else setAuthMsg('Link enviado para seu email.')
+  }
+
+
   async function handleLogout() {
     await supabase.auth.signOut()
   }
@@ -212,10 +231,21 @@ export default function Home() {
             onChange={(e) => setPassword(e.target.value)}
             style={{ display: 'block', marginBottom: 10, width: '100%' }}
           />
+          <div className="login-actions">
           <button className="btn" onClick={handleLogin} disabled={authLoading}>
             {authLoading ? 'Entrando...' : 'Entrar'}
           </button>
-          
+
+          <button
+            type="button"
+            className="btn-link"
+            onClick={() => router.push('/esqueci-senha')}
+          >
+            Esqueci minha senha
+          </button>
+        </div>
+
+
           {authMsg && <p className="authMsg">{authMsg}</p>}
 
 

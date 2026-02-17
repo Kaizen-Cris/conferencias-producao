@@ -106,7 +106,8 @@ export default function MovimentacaoDetalhePage() {
         profiles:conferido_por ( nome )
       `)
       .eq('movimentacao_id', id)
-      .order('fase', { ascending: true })
+      .order('conferido_em', { ascending: true })
+
 
     console.log('CONF DETALHE (RAW):', confData, confErr)
     // ✅ importante: tipa o estado, mas não força formato de profiles aqui
@@ -157,7 +158,7 @@ export default function MovimentacaoDetalhePage() {
       items.push({
         when: mov.criado_em ?? null,
         label: 'Movimentação criada',
-        detail: `Total: ${mov.qtd_informada} | Status: ${mov.status}`,
+        detail: `Total: ${mov.qtd_informada} | Status: PENDENTE`,
       })
     }
 
@@ -179,6 +180,22 @@ export default function MovimentacaoDetalhePage() {
         )}`,
       })
     })
+
+    if (mov?.status && mov.status !== 'PENDENTE') {
+      // pega a última data relevante pra ser o "final" da linha do tempo
+      const lastConf = confs.length ? confs[confs.length - 1].conferido_em : null
+      const lastAj = ajustes.length ? ajustes[ajustes.length - 1].ajustado_em : null
+
+      const lastWhen =
+        [lastConf, lastAj].filter(Boolean).sort((a, b) => +new Date(a as string) - +new Date(b as string)).pop() ?? null
+
+      items.push({
+        when: lastWhen,
+        label: 'Status atualizado',
+        detail: `Status final: ${mov.status}`,
+      })
+    }
+
 
     items.sort((x, y) => {
       const ax = x.when ? new Date(x.when).getTime() : 0
