@@ -1,16 +1,13 @@
 'use client'
-
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
-
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
 import Menu from '../../components/menu'
 import StatusBadge from '../../components/statusbadge'
-import { useSearchParams } from 'next/navigation'
+
 
 
 type Mov = {
@@ -84,31 +81,30 @@ export default function HistoricoPage() {
   }
 
   useEffect(() => {
-    if (diaParam) setDiaFiltro(diaParam)
-    // só na primeira carga
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    let mounted = true
 
-
-  useEffect(() => {
     async function init() {
       setAuthLoading(true)
       const r = await getMyRole()
+      if (!mounted) return
       setRole(r)
       setAuthLoading(false)
-
-      if (r !== 'ADMIN') return
-
-      // Se veio dia na URL, usa ele
-      const diaFromUrl = searchParams.get('dia')
-      if (diaFromUrl) {
-        setDiaFiltro(diaFromUrl)
-      }
     }
 
     init()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { mounted = false }
   }, [])
+
+  useEffect(() => {
+    if (diaParam) setDiaFiltro(diaParam)
+    else setDiaFiltro('')
+  }, [diaParam])
+
+  useEffect(() => {
+    if (role === 'ADMIN') carregar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, statusFiltro, diaFiltro])
+
 
   // ✅ Ao mudar filtro, recarrega automaticamente (mantém comportamento que você já tinha)
   useEffect(() => {
