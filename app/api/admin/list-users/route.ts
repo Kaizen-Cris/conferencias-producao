@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     // pega roles/is_disabled do profiles
     const { data: profs, error: profErr } = await admin
       .from('profiles')
-      .select('id, role, is_disabled')
+      .select('id, nome, role, is_disabled')
       .in('id', ids)
 
     if (profErr) {

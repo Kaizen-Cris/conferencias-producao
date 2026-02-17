@@ -10,12 +10,13 @@ export async function POST(req: Request) {
 
     const { admin } = gate
 
-    const body = (await req.json()) as { email: string; password: string; role: Role }
+    const body = (await req.json()) as { email: string; nome: string; password: string; role: Role }
     const email = (body.email || '').trim().toLowerCase()
+    const nome = body.nome || ''
     const password = body.password || ''
     const role = body.role
 
-    if (!email || !password || !role) {
+    if (!email || !nome || !password || !role) {
       return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 })
     }
 
@@ -37,6 +38,7 @@ export async function POST(req: Request) {
     // cria/atualiza profile
     const { error: upErr } = await admin.from('profiles').upsert({
       id: created.user.id,
+      nome: nome || null,
       role,
       is_disabled: false, // <<< importante p/ o toggle/list
     })
