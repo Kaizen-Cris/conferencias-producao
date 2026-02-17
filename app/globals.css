@@ -634,3 +634,21 @@ button:disabled{ opacity: .6; cursor: not-allowed; }
   }
 }
 
+.list-item:active{
+  transform: scale(.99);
+}
+
+.filters-chip{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+/* quando mobile vira coluna, fica bonito também */
+@media (max-width: 760px){
+  .filters-chip{
+    width:100%;
+    justify-content: space-between;
+  }
+}

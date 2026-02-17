@@ -6,6 +6,8 @@ import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
 import Menu from '../../components/menu'
 import StatusBadge from '../../components/statusbadge'
+import { useSearchParams } from 'next/navigation'
+
 
 type Mov = {
   id: string
@@ -18,6 +20,8 @@ type Mov = {
 
 export default function HistoricoPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const diaParam = searchParams.get('dia') // formato YYYY-MM-DD
 
   const [role, setRole] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -27,7 +31,19 @@ export default function HistoricoPage() {
 
   const [statusFiltro, setStatusFiltro] = useState('TODOS')
   const [busca, setBusca] = useState('')
+  const [diaFiltro, setDiaFiltro] = useState<string>('')
 
+  function brDayToUtcRange(diaYYYYMMDD: string) {
+    // Interpreta o "dia" no fuso do Brasil (-03:00) e converte para UTC via Date().
+    // Usamos intervalo [start, end) (end exclusivo) que é o padrão mais seguro.
+    const start = new Date(`${diaYYYYMMDD}T00:00:00-03:00`).toISOString()
+    const end = new Date(`${diaYYYYMMDD}T00:00:00-03:00`)
+    end.setDate(end.getDate() + 1)
+    const endISO = end.toISOString()
+    return { startISO: start, endISO }
+  }
+
+  
   async function carregar() {
     setLoading(true)
 
@@ -40,6 +56,12 @@ export default function HistoricoPage() {
     if (statusFiltro !== 'TODOS') {
       q = q.eq('status', statusFiltro)
     }
+
+    if (diaFiltro) {
+      const { startISO: start, endISO: end } = brDayToUtcRange(diaFiltro)
+      q = q.gte('criado_em', start).lt('criado_em', end)
+    }
+
 
     const { data, error } = await q
 
@@ -58,25 +80,40 @@ export default function HistoricoPage() {
   }
 
   useEffect(() => {
+    if (diaParam) setDiaFiltro(diaParam)
+    // só na primeira carga
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+
+  useEffect(() => {
     async function init() {
       setAuthLoading(true)
       const r = await getMyRole()
       setRole(r)
       setAuthLoading(false)
 
-      if (r === 'ADMIN') {
-        carregar()
+      if (r !== 'ADMIN') return
+
+      // Se veio dia na URL, usa ele
+      const diaFromUrl = searchParams.get('dia')
+      if (diaFromUrl) {
+        setDiaFiltro(diaFromUrl)
       }
     }
 
     init()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ✅ Ao mudar filtro, recarrega automaticamente (mantém comportamento que você já tinha)
   useEffect(() => {
-    if (role === 'ADMIN') carregar()
+    if (role === 'ADMIN') {
+      carregar()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFiltro])
+  }, [role, statusFiltro, diaFiltro])
+
 
   // ✅ Carregando padronizado com Menu + container/card
   if (authLoading) {
@@ -117,6 +154,23 @@ export default function HistoricoPage() {
           </div>
 
           <div className="filters-row">
+            {diaFiltro && (
+              <div className="filters-chip">
+                <span className="badge reconferir">Dia: {diaFiltro}</span>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => {
+                    setDiaFiltro('')
+                    router.push('/historico')
+                  }}
+                >
+                  Limpar dia
+                </button>
+              </div>
+            )}
+
+            
             <select
               className="select"
               value={statusFiltro}
@@ -166,7 +220,7 @@ export default function HistoricoPage() {
                   <div className="meta">
                     <div><b>Lote:</b> {m.lote}</div>
                     <div><b>Total:</b> {m.qtd_informada} un</div>
-                    <div><b>Data:</b> {new Date(m.criado_em).toLocaleString()}</div>
+                    <div><b>Data:</b> {new Date(m.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div>
                   </div>
                 </div>
               ))}

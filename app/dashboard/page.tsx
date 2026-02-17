@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
 import Menu from '../../components/menu'
+import { useRouter } from 'next/navigation'
+
 
 type Mov = {
   id: string
@@ -24,6 +26,9 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true)
   const [rows, setRows] = useState<Mov[]>([])
+
+  const router = useRouter()
+
 
   // últimos 7 dias
   const startISO = useMemo(() => {
@@ -142,31 +147,65 @@ export default function DashboardPage() {
               {porDia.length === 0 && <p style={{ color: 'var(--muted)' }}>Sem dados nos últimos 7 dias.</p>}
 
               {porDia.length > 0 && (
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Dia</th>
-                      <th>Total</th>
-                      <th>Pendente</th>
-                      <th>Reconferir</th>
-                      <th>Divergente</th>
-                      <th>Aprovado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <>
+                  {/* MOBILE: lista clicável */}
+                  <div className="show-mobile list">
                     {porDia.map(([day, v]) => (
-                      <tr key={day}>
-                        <td style={{ padding: '8px 0' }}>{day}</td>
-                        <td>{v.total}</td>
-                        <td>{v.pend}</td>
-                        <td>{v.rec}</td>
-                        <td>{v.div}</td>
-                        <td>{v.apr}</td>
-                      </tr>
+                      <div
+                        key={day}
+                        className="list-item"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => router.push(`/historico?dia=${day}`)}
+                      >
+                        <div className="top">
+                          <div style={{ fontWeight: 800 }}>{day}</div>
+                          <div className="badge aprovado">Total: {v.total}</div>
+                        </div>
+
+                        {/* Se quiser deixar mais limpo ainda, remove esse meta */}
+                        <div className="meta">
+                          <div><b>Pendente:</b> {v.pend}</div>
+                          <div><b>Reconferir:</b> {v.rec}</div>
+                          <div><b>Divergente:</b> {v.div}</div>
+                          <div><b>Aprovado:</b> {v.apr}</div>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+
+                  {/* DESKTOP: tabela completa */}
+                  <div className="hide-mobile">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Dia</th>
+                          <th>Total</th>
+                          <th>Pendente</th>
+                          <th>Reconferir</th>
+                          <th>Divergente</th>
+                          <th>Aprovado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {porDia.map(([day, v]) => (
+                          <tr key={day} className="row-clickable" onClick={() => router.push(`/historico?dia=${day}`)}>
+                            <td style={{ padding: '8px 0' }}>{day}</td>
+                            <td>{v.total}</td>
+                            <td>{v.pend}</td>
+                            <td>{v.rec}</td>
+                            <td>{v.div}</td>
+                            <td>{v.apr}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p style={{ marginTop: 8, color: 'var(--muted)', fontSize: 13 }}>
+                      Dica: clique em um dia para abrir o histórico filtrado.
+                    </p>
+                  </div>
+                </>
               )}
+
             </>
           )}
         </div>
