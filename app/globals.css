@@ -635,3 +635,15 @@ button:disabled, .btn:disabled{ opacity: .6; cursor: not-allowed; }
     padding-top: 6px !important;
   }
 }
+
+.li-title{
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+@media (max-width: 760px){
+  .li-title{ max-width: 60%; }
+}

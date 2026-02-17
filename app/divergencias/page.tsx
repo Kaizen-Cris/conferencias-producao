@@ -120,34 +120,61 @@ export default function DivergenciasPage() {
           )}
 
           {!loading && lista.length > 0 && (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Lote</th>
-                  <th>Total (un)</th>
-                  <th>Status</th>
-                  <th>Criado em</th>
-                </tr>
-              </thead>
-
-              <tbody>
+            <>
+              {/* MOBILE: cards */}
+              <div className="show-mobile list">
                 {lista.map((m) => (
-                  <tr
+                  <div
                     key={m.id}
-                    className="row-clickable"
+                    className="list-item"
                     onClick={() => router.push(`/ajustar/${m.id}`)}
-                    title="Clique para ajustar"
+                    style={{ cursor: 'pointer' }}
                   >
-                    <td>{m.item}</td>
-                    <td>{m.lote}</td>
-                    <td>{m.qtd_informada}</td>
-                    <td><StatusBadge status={m.status} /></td>
-                    <td>{new Date(m.criado_em).toLocaleString()}</td>
-                  </tr>
+                    <div className="top">
+                      <div className="li-title">{m.item}</div>
+                      <StatusBadge status={m.status} />
+                    </div>
+
+                    <div className="meta">
+                      <div><b>Lote:</b> {m.lote}</div>
+                      <div><b>Total:</b> {m.qtd_informada} un</div>
+                      <div><b>Criado em:</b> {new Date(m.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* DESKTOP: table */}
+              <div className="hide-mobile">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Lote</th>
+                      <th>Total (un)</th>
+                      <th>Status</th>
+                      <th>Criado em</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lista.map((m) => (
+                      <tr
+                        key={m.id}
+                        className="row-clickable"
+                        onClick={() => router.push(`/ajustar/${m.id}`)}
+                        title="Clique para ajustar"
+                      >
+                        <td>{m.item}</td>
+                        <td>{m.lote}</td>
+                        <td>{m.qtd_informada}</td>
+                        <td><StatusBadge status={m.status} /></td>
+                        <td>{new Date(m.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
