@@ -87,7 +87,7 @@ export default function HistoricoClient() {
 
   // reload on filters
   useEffect(() => {
-    if (role !== 'ADMIN' && role !== 'OPERADOR' && role !== 'CONFERENTE') carregar()
+    if (role !== 'OPERADOR' && role !== 'ADMIN' && role !== 'OPERADOR') carregar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, statusFiltro, diaFiltro])
 
@@ -101,19 +101,6 @@ export default function HistoricoClient() {
     )
   }
 
-  if (role !== 'ADMIN') {
-    return (
-      <div>
-        <Menu />
-        <div className="container">
-          <div className="card">
-            <h1 style={{ marginTop: 0 }}>Histórico</h1>
-            <p>Você não tem permissão para acessar esta página.</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div>
