@@ -87,7 +87,7 @@ export default function HistoricoClient() {
 
   // reload on filters
   useEffect(() => {
-    if (role !== 'OPERADOR' && role !== 'ADMIN' && role !== 'OPERADOR') carregar()
+    if (role !== 'OPERADOR' && role !== 'ADMIN' && role !== 'CONFERENTE') carregar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, statusFiltro, diaFiltro])
 
