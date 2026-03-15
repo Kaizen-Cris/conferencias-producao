@@ -6,6 +6,7 @@ import { supabase } from '../../../lib/supabase'
 import { getMyRole } from '../../../lib/auth'
 import Menu from '../../../components/menu'
 import { onlyDigits } from '../../../lib/onlyDigits'
+import Popup from '../../../components/popup'
 
 
 type Mov = {
@@ -34,6 +35,24 @@ export default function ConferirPage() {
   const [qtdPorCaixa, setQtdPorCaixa] = useState('')
   const [avulsas, setAvulsas] = useState('')
   const [loading, setLoading] = useState(true)
+  const [popupOpen, setPopupOpen] = useState(false)
+  const [popupTitle, setPopupTitle] = useState('Aviso')
+  const [popupMessage, setPopupMessage] = useState('')
+  const [popupAction, setPopupAction] = useState<null | (() => void)>(null)
+  const [popupVariant, setPopupVariant] = useState<'success' | 'alert' | 'warning' | 'confirm'>('warning')
+
+  function showAlert(
+    message: string,
+    title = 'Aviso',
+    variant: 'success' | 'alert' | 'warning' | 'confirm' = 'warning',
+    action?: () => void
+  ) {
+    setPopupTitle(title)
+    setPopupMessage(message)
+    setPopupVariant(variant)
+    setPopupAction(action ?? null)
+    setPopupOpen(true)
+  }
 
   const n = (v: string) => {
   const x = Number(v)
@@ -82,7 +101,7 @@ export default function ConferirPage() {
     const userId = sessionData.session?.user?.id
 
     if (!userId) {
-      alert('Você precisa estar logado.')
+      showAlert('Você precisa estar logado.', 'Aviso', 'warning')
       return
     }
 
@@ -91,13 +110,13 @@ export default function ConferirPage() {
 
     // Regra de ouro: não pode conferir a própria movimentação
     if (userId === mov.criado_por) {
-      alert('Você não pode conferir uma movimentação criada por você.')
+      showAlert('Você não pode conferir uma movimentação criada por você.', 'Aviso', 'warning')
       return
     }
 
     const qtdInt = totalConferido
     if (qtdInt <= 0) {
-      alert('Informe a quantidade conferida (maior que zero).')
+      showAlert('Informe a quantidade conferida (maior que zero).', 'Alerta', 'alert')
       return
     }
 
@@ -114,12 +133,16 @@ export default function ConferirPage() {
 
     if (confErr) {
       console.log('CONF CHECK ERROR:', confErr)
-      alert('Erro ao verificar conferência existente. Veja o console.')
+      showAlert('Erro ao verificar conferência existente. Veja o console.', 'Alerta', 'alert')
       return
     }
 
     if (confExistente && confExistente.length > 0) {
-      alert('Esta movimentação já foi conferida nesta fase. Se precisar, use o fluxo de divergência/ajuste.')
+      showAlert(
+        'Esta movimentação já foi conferida nesta fase. Se precisar, use o fluxo de divergência/ajuste.',
+        'Alerta',
+        'alert'
+      )
       return
     }
 
@@ -138,7 +161,7 @@ export default function ConferirPage() {
 
     if (errConf) {
       console.log('CONF ERROR:', errConf)
-      alert('Erro ao salvar conferência. Veja o console.')
+      showAlert('Erro ao salvar conferência. Veja o console.', 'Alerta', 'alert')
       return
     }
 
@@ -150,12 +173,15 @@ export default function ConferirPage() {
 
     if (errMov) {
       console.log('STATUS ERROR:', errMov)
-      alert('Erro ao atualizar status. Veja o console.')
+      showAlert('Erro ao atualizar status. Veja o console.', 'Alerta', 'alert')
       return
     }
 
-    alert(`Conferência salva! Status: ${novoStatus}`)
-    router.push('/pendentes')
+    if (novoStatus === 'APROVADO') {
+      showAlert(`Conferência salva! Status: ${novoStatus}`, 'Sucesso', 'success', () => router.push('/pendentes'))
+    } else {
+      showAlert(`Conferência salva! Status: ${novoStatus}`, 'Alerta', 'alert', () => router.push('/pendentes'))
+    }
   }
 
   if (!movId || authLoading || loading) {
@@ -197,6 +223,17 @@ export default function ConferirPage() {
   return (
     <div>
       <Menu />
+      <Popup
+        open={popupOpen}
+        title={popupTitle}
+        message={popupMessage}
+        variant={popupVariant}
+        onConfirm={popupAction ?? undefined}
+        onClose={() => {
+          setPopupOpen(false)
+          setPopupAction(null)
+        }}
+      />
 
       <div className="container">
         <div className="card">

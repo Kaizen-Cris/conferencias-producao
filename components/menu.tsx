@@ -27,7 +27,7 @@ export default function Menu() {
       { label: 'Pendentes', path: '/pendentes', roles: ['CONFERENTE', 'ADMIN'] },
       { label: 'Divergências', path: '/divergencias', roles: ['OPERADOR', 'ADMIN'] },
       { label: 'Histórico', path: '/historico', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE'] },
-      { label: 'Dashboard', path: '/dashboard', roles: ['ADMIN'] },
+      { label: 'Itens', path: '/itens', roles: ['ADMIN'] },
       { label: 'Configuração', path: '/configuracao', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE'] },
       { label: 'Usuários', path: '/usuarios', roles: ['ADMIN'] },
     ],

@@ -7,6 +7,7 @@ import { onlyDigits } from '../../lib/onlyDigits'
 import { useRouter } from 'next/navigation'
 import { getMyRole } from '../../lib/auth'
 import { sanitizeText } from '../../lib/sanitize'
+import Popup from '../../components/popup'
 
 type ItemRow = { id: string; nome: string }
 
@@ -26,6 +27,17 @@ export default function RegistrarPage() {
   const [itens, setItens] = useState<ItemRow[]>([])
   const [itemId, setItemId] = useState('')
   const [itemBusca, setItemBusca] = useState('')
+  const [popupOpen, setPopupOpen] = useState(false)
+  const [popupTitle, setPopupTitle] = useState('Sucesso')
+  const [popupMessage, setPopupMessage] = useState('')
+  const [popupVariant, setPopupVariant] = useState<'success' | 'alert' | 'warning' | 'confirm'>('warning')
+
+  function showAlert(message: string, title = 'Sucesso') {
+    setPopupTitle(title)
+    setPopupMessage(message)
+    setPopupVariant('success')
+    setPopupOpen(true)
+  }
 
   const totalUnidades = useMemo(() => {
     const c = Number(caixas || 0)
@@ -97,29 +109,29 @@ export default function RegistrarPage() {
     const userId = sessionData.session?.user?.id
 
     if (!userId) {
-      alert('Você precisa estar logado.')
+      showAlert('Você precisa estar logado.')
       router.replace('/')
       return
     }
 
     if (!itemId) {
-      alert('Selecione um item.')
+      showAlert('Selecione um item.')
       return
     }
 
     const itemSelecionado = itens.find((x) => x.id === itemId)
     if (!itemSelecionado) {
-      alert('Item inválido. Recarregue a página e tente novamente.')
+      showAlert('Item inválido. Recarregue a página e tente novamente.')
       return
     }
 
     if (!lote.trim()) {
-      alert('Preencha o lote.')
+      showAlert('Preencha o lote.')
       return
     }
 
     if (totalUnidades <= 0) {
-      alert('Informe caixas e quantidade por caixa (e/ou unidades avulsas). O total deve ser maior que zero.')
+      showAlert('Informe caixas e quantidade por caixa (e/ou unidades avulsas). O total deve ser maior que zero.')
       return
     }
 
@@ -142,11 +154,11 @@ export default function RegistrarPage() {
 
     if (error) {
       console.log('INSERT ERROR:', error)
-      alert('Erro ao salvar movimentação. Veja o console.')
+      showAlert('Erro ao salvar movimentação. Veja o console.')
       return
     }
 
-    alert('Movimentação salva com sucesso!')
+    showAlert('Movimentação salva com sucesso!', 'Sucesso')
 
     setItemId('')
     setItemBusca('')
@@ -175,6 +187,13 @@ export default function RegistrarPage() {
   return (
     <div>
       <Menu />
+      <Popup
+        open={popupOpen}
+        title={popupTitle}
+        message={popupMessage}
+        variant={popupVariant}
+        onClose={() => setPopupOpen(false)}
+      />
 
       <div className="container">
         <div className="card">

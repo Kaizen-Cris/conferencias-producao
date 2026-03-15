@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
 import Menu from '../../components/menu'
 import StatusBadge from '../../components/statusbadge'
+import Popup from '../../components/popup'
 
 type Mov = {
   id: string
@@ -34,10 +35,18 @@ export default function HistoricoClient() {
   const [lista, setLista] = useState<Mov[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [popupOpen, setPopupOpen] = useState(false)
+  const [popupTitle, setPopupTitle] = useState('Alerta')
+  const [popupMessage, setPopupMessage] = useState('')
+  const [popupConfirmText, setPopupConfirmText] = useState('OK')
+  const [popupShowCancel, setPopupShowCancel] = useState(false)
+  const [popupAction, setPopupAction] = useState<null | (() => void)>(null)
+  const [popupVariant, setPopupVariant] = useState<'success' | 'alert' | 'warning' | 'confirm'>('alert')
 
   const [statusFiltro, setStatusFiltro] = useState('TODOS')
   const [busca, setBusca] = useState('')
   const [diaFiltro, setDiaFiltro] = useState<string>('')
+  const isAdmin = role === 'ADMIN'
 
   async function carregar() {
     setLoading(true)
@@ -67,9 +76,31 @@ export default function HistoricoClient() {
     setLoading(false)
   }
 
+  function showAlert(message: string, title = 'Alerta') {
+    setPopupTitle(title)
+    setPopupMessage(message)
+    setPopupConfirmText('OK')
+    setPopupShowCancel(false)
+    setPopupAction(null)
+    setPopupVariant('alert')
+    setPopupOpen(true)
+  }
+
+  function showConfirm(message: string, onConfirm: () => void, title = 'Alerta') {
+    setPopupTitle(title)
+    setPopupMessage(message)
+    setPopupConfirmText('Excluir')
+    setPopupShowCancel(true)
+    setPopupAction(() => onConfirm)
+    setPopupVariant('alert')
+    setPopupOpen(true)
+  }
+
   async function excluirMov(id: string) {
-    const ok = window.confirm('Tem certeza que deseja excluir este registro?')
-    if (!ok) return
+    if (!isAdmin) {
+      showAlert('Apenas administradores podem excluir registros.')
+      return
+    }
     setDeletingId(id)
     const { error } = await supabase
       .from('movimentacoes')
@@ -77,7 +108,7 @@ export default function HistoricoClient() {
       .eq('id', id)
     setDeletingId(null)
     if (error) {
-      alert('Não foi possível excluir. Verifique suas permissões e tente novamente.')
+      showAlert('Não foi possível excluir. Verifique suas permissões e tente novamente.')
       return
     }
     setLista((prev) => prev.map((m) => (m.id === id ? { ...m, status: 'EXCLUIDO' } : m)))
@@ -122,6 +153,19 @@ export default function HistoricoClient() {
   return (
     <div>
       <Menu />
+      <Popup
+        open={popupOpen}
+        title={popupTitle}
+        message={popupMessage}
+        confirmText={popupConfirmText}
+        showCancel={popupShowCancel}
+        variant={popupVariant}
+        onConfirm={popupAction ?? undefined}
+        onClose={() => {
+          setPopupOpen(false)
+          setPopupAction(null)
+        }}
+      />
 
       <div className="container">
         <div className="card">
@@ -189,23 +233,25 @@ export default function HistoricoClient() {
                       <div><b>Data:</b> {new Date(m.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div>
                     </div>
 
-                    <div style={{ marginTop: 8 }}>
-                      <button
-                        className="btn"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          excluirMov(m.id)
-                        }}
-                        disabled={deletingId === m.id || (m.status || '').toUpperCase() === 'EXCLUIDO'}
-                      >
-                        {deletingId === m.id
-                          ? 'Excluindo...'
-                          : (m.status || '').toUpperCase() === 'EXCLUIDO'
-                            ? 'Excluído'
-                            : 'Excluir'}
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div style={{ marginTop: 8 }}>
+                        <button
+                          className="btn"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            showConfirm('Tem certeza que deseja excluir este registro?', () => excluirMov(m.id))
+                          }}
+                          disabled={deletingId === m.id || (m.status || '').toUpperCase() === 'EXCLUIDO'}
+                        >
+                          {deletingId === m.id
+                            ? 'Excluindo...'
+                            : (m.status || '').toUpperCase() === 'EXCLUIDO'
+                              ? 'Excluído'
+                              : 'Excluir'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -219,7 +265,7 @@ export default function HistoricoClient() {
                       <th>Total (un)</th>
                       <th>Status</th>
                       <th>Criado em</th>
-                      <th>Ações</th>
+                      {isAdmin && <th>Ações</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -235,23 +281,25 @@ export default function HistoricoClient() {
                         <td>{m.qtd_informada}</td>
                         <td><StatusBadge status={m.status} /></td>
                         <td>{new Date(m.criado_em).toLocaleString()}</td>
-                        <td>
-                          <button
-                            className="btn"
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              excluirMov(m.id)
-                            }}
-                            disabled={deletingId === m.id || (m.status || '').toUpperCase() === 'EXCLUIDO'}
-                          >
-                            {deletingId === m.id
-                              ? 'Excluindo...'
-                              : (m.status || '').toUpperCase() === 'EXCLUIDO'
-                                ? 'Excluído'
-                                : 'Excluir'}
-                          </button>
-                        </td>
+                        {isAdmin && (
+                          <td>
+                            <button
+                              className="btn"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                showConfirm('Tem certeza que deseja excluir este registro?', () => excluirMov(m.id))
+                              }}
+                              disabled={deletingId === m.id || (m.status || '').toUpperCase() === 'EXCLUIDO'}
+                            >
+                              {deletingId === m.id
+                                ? 'Excluindo...'
+                                : (m.status || '').toUpperCase() === 'EXCLUIDO'
+                                  ? 'Excluído'
+                                  : 'Excluir'}
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
