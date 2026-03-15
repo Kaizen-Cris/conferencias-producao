@@ -7,6 +7,7 @@ export default function StatusBadge({ status }: { status: string }) {
   else if (s === 'reconferir') cls += ' reconferir'
   else if (s === 'divergente') cls += ' divergente'
   else if (s === 'aprovado') cls += ' aprovado'
+  else if (s === 'excluido') cls += ' excluido'
 
   return <span className={cls}>{status}</span>
 }

@@ -192,6 +192,7 @@ button:disabled, .btn:disabled{ opacity: .6; cursor: not-allowed; }
 .badge.reconferir{ background: #eff6ff; color: #1d4ed8; }
 .badge.divergente{ background: #fef2f2; color: #b91c1c; }
 .badge.aprovado{ background: #ecfdf5; color: #047857; }
+.badge.excluido{ background: #f3f4f6; color: #374151; }
 
 /* =========================================================
    KPI CARDS / GRIDS

@@ -33,6 +33,7 @@ export default function HistoricoClient() {
 
   const [lista, setLista] = useState<Mov[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const [statusFiltro, setStatusFiltro] = useState('TODOS')
   const [busca, setBusca] = useState('')
@@ -64,6 +65,22 @@ export default function HistoricoClient() {
 
     setLista(rows)
     setLoading(false)
+  }
+
+  async function excluirMov(id: string) {
+    const ok = window.confirm('Tem certeza que deseja excluir este registro?')
+    if (!ok) return
+    setDeletingId(id)
+    const { error } = await supabase
+      .from('movimentacoes')
+      .update({ status: 'EXCLUIDO' })
+      .eq('id', id)
+    setDeletingId(null)
+    if (error) {
+      alert('Não foi possível excluir. Verifique suas permissões e tente novamente.')
+      return
+    }
+    setLista((prev) => prev.map((m) => (m.id === id ? { ...m, status: 'EXCLUIDO' } : m)))
   }
 
   // role
@@ -133,6 +150,7 @@ export default function HistoricoClient() {
               <option value="RECONFERIR">Reconferir</option>
               <option value="DIVERGENTE">Divergente</option>
               <option value="APROVADO">Aprovado</option>
+              <option value="EXCLUIDO">Excluído</option>
             </select>
 
             <input
@@ -170,6 +188,24 @@ export default function HistoricoClient() {
                       <div><b>Total:</b> {m.qtd_informada} un</div>
                       <div><b>Data:</b> {new Date(m.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div>
                     </div>
+
+                    <div style={{ marginTop: 8 }}>
+                      <button
+                        className="btn"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          excluirMov(m.id)
+                        }}
+                        disabled={deletingId === m.id || (m.status || '').toUpperCase() === 'EXCLUIDO'}
+                      >
+                        {deletingId === m.id
+                          ? 'Excluindo...'
+                          : (m.status || '').toUpperCase() === 'EXCLUIDO'
+                            ? 'Excluído'
+                            : 'Excluir'}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -183,6 +219,7 @@ export default function HistoricoClient() {
                       <th>Total (un)</th>
                       <th>Status</th>
                       <th>Criado em</th>
+                      <th>Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -198,6 +235,23 @@ export default function HistoricoClient() {
                         <td>{m.qtd_informada}</td>
                         <td><StatusBadge status={m.status} /></td>
                         <td>{new Date(m.criado_em).toLocaleString()}</td>
+                        <td>
+                          <button
+                            className="btn"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              excluirMov(m.id)
+                            }}
+                            disabled={deletingId === m.id || (m.status || '').toUpperCase() === 'EXCLUIDO'}
+                          >
+                            {deletingId === m.id
+                              ? 'Excluindo...'
+                              : (m.status || '').toUpperCase() === 'EXCLUIDO'
+                                ? 'Excluído'
+                                : 'Excluir'}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

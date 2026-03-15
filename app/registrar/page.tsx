@@ -186,8 +186,13 @@ export default function RegistrarPage() {
 
           <label>Item</label>
 
-          {/* se quiser reativar a busca futuramente, só descomentar */}
-          {/* <input className="input" value={itemBusca} onChange={(e) => setItemBusca(e.target.value)} placeholder="Buscar item..." /> */}
+          <input
+            className="input"
+            value={itemBusca}
+            onChange={(e) => setItemBusca(e.target.value)}
+            placeholder="Buscar item..."
+            style={{ marginTop: 8 }}
+          />
 
           <select
             className="select"

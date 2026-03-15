@@ -127,6 +127,7 @@ export default function UsuariosPage() {
     setMsg(null)
 
     if (!email.trim()) return setMsg('Informe o email.')
+    if (!nome.trim()) return setMsg('Informe o nome.')
     if (!password.trim() || password.trim().length < 8) return setMsg('Informe uma senha (mínimo recomendado: 8).')
 
     setCreating(true)
@@ -143,7 +144,7 @@ export default function UsuariosPage() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ email: email.trim(), password, role: newRole }),
+      body: JSON.stringify({ email: email.trim(), nome: nome.trim(), password, role: newRole }),
     })
 
     const json: any = await safeReadJson(res)
@@ -208,6 +209,8 @@ export default function UsuariosPage() {
             </button>
           </div>
 
+          <h2 className="uTitle2">Cadastrar usuário</h2>
+
           <div className="uForm">
             <div className="uField">
               <label>Email</label>
@@ -238,7 +241,7 @@ export default function UsuariosPage() {
           </div>
 
           <div className="uForm">
-              <div className="uField">
+            <div className="uField">
                 <label>Nome</label>
                 <input
                   value={nome}
@@ -247,14 +250,14 @@ export default function UsuariosPage() {
                   autoComplete="off"
                 />
               </div>
-              <div className="uField">
-                <label>Perfil</label>
+            <div className="uField">
+              <label>Perfil</label>
                 <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
                   <option value="OPERADOR">OPERADOR</option>
                   <option value="CONFERENTE">CONFERENTE</option>
                   <option value="ADMIN">ADMIN</option>
                 </select>
-              </div>
+            </div>
           </div>
 
           <div className="uActions">

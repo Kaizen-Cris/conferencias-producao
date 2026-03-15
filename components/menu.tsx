@@ -28,6 +28,7 @@ export default function Menu() {
       { label: 'Divergências', path: '/divergencias', roles: ['OPERADOR', 'ADMIN'] },
       { label: 'Histórico', path: '/historico', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE'] },
       { label: 'Dashboard', path: '/dashboard', roles: ['ADMIN'] },
+      { label: 'Configuração', path: '/configuracao', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE'] },
       { label: 'Usuários', path: '/usuarios', roles: ['ADMIN'] },
     ],
     []
