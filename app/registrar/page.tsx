@@ -6,6 +6,7 @@ import Menu from '../../components/menu'
 import { onlyDigits } from '../../lib/onlyDigits'
 import { useRouter } from 'next/navigation'
 import { getMyRole } from '../../lib/auth'
+import { sanitizeText } from '../../lib/sanitize'
 
 type ItemRow = { id: string; nome: string }
 
@@ -155,8 +156,9 @@ export default function RegistrarPage() {
     setUnidadesAvulsas('0')
   }
 
+  const buscaSanitizada = sanitizeText(itemBusca, { maxLen: 80 }).toLowerCase()
   const itensFiltrados = itens.filter((x) =>
-    x.nome.toLowerCase().includes(itemBusca.trim().toLowerCase())
+    x.nome.toLowerCase().includes(buscaSanitizada)
   )
 
   if (guardLoading) {

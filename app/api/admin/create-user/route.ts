@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '../_utils'
+import { sanitizeText } from '../../../../lib/sanitize'
 
 type Role = 'OPERADOR' | 'CONFERENTE' | 'ADMIN'
 
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
 
     const body = (await req.json()) as { email: string; nome: string; password: string; role: Role }
     const email = (body.email || '').trim().toLowerCase()
-    const nome = body.nome || ''
+    const nome = sanitizeText(body.nome || '', { maxLen: 80 })
     const password = body.password || ''
     const role = body.role
 

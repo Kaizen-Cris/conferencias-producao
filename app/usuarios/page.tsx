@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Menu from '../../components/menu'
 import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
+import { sanitizeText } from '../../lib/sanitize'
 
 type Role = 'OPERADOR' | 'CONFERENTE' | 'ADMIN'
 
@@ -127,7 +128,8 @@ export default function UsuariosPage() {
     setMsg(null)
 
     if (!email.trim()) return setMsg('Informe o email.')
-    if (!nome.trim()) return setMsg('Informe o nome.')
+    const nomeSanitizado = sanitizeText(nome, { maxLen: 80 })
+    if (!nomeSanitizado) return setMsg('Informe o nome.')
     if (!password.trim() || password.trim().length < 8) return setMsg('Informe uma senha (mínimo recomendado: 8).')
 
     setCreating(true)
@@ -144,7 +146,7 @@ export default function UsuariosPage() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ email: email.trim(), nome: nome.trim(), password, role: newRole }),
+      body: JSON.stringify({ email: email.trim(), nome: nomeSanitizado, password, role: newRole }),
     })
 
     const json: any = await safeReadJson(res)

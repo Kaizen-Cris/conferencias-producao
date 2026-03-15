@@ -6,6 +6,7 @@ import { supabase } from '../../../lib/supabase'
 import { getMyRole } from '../../../lib/auth'
 import Menu from '../../../components/menu'
 import { onlyDigits } from '../../../lib/onlyDigits'
+import { sanitizeText } from '../../../lib/sanitize'
 
 type Mov = {
   id: string
@@ -140,7 +141,7 @@ export default function AjustarPage() {
           movimentacao_id: mov.id,
           qtd_antiga: mov.qtd_informada,
           qtd_nova: totalUnidades,
-          motivo: motivo.trim(),
+          motivo: motivoSanitizado,
           ajustado_por: userId,
           tipo: 'OPERADOR',
         },
