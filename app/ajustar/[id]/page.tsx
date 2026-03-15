@@ -7,6 +7,7 @@ import { getMyRole } from '../../../lib/auth'
 import Menu from '../../../components/menu'
 import { onlyDigits } from '../../../lib/onlyDigits'
 import { sanitizeText } from '../../../lib/sanitize'
+import Popup from '../../../components/popup'
 
 type Mov = {
   id: string
@@ -34,6 +35,9 @@ export default function AjustarPage() {
   const [mov, setMov] = useState<Mov | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [popupOpen, setPopupOpen] = useState(false)
+  const [popupTitle, setPopupTitle] = useState('Sucesso')
+  const [popupMessage, setPopupMessage] = useState('')
 
 
   // campos de ajuste
@@ -116,19 +120,29 @@ export default function AjustarPage() {
       const userId = sessionData.session?.user?.id
 
       if (!userId) {
-        alert('Você precisa estar logado.')
+        setPopupMessage('Você precisa estar logado.')
+        setPopupOpen(true)
         return
       }
 
       if (!mov) return
 
       if (!motivo.trim()) {
-        alert('Informe o motivo do ajuste (obrigatório).')
+        setPopupMessage('Informe o motivo do ajuste (obrigatório).')
+        setPopupOpen(true)
+        return
+      }
+
+      const motivoSanitizado = sanitizeText(motivo, { maxLen: 200 })
+      if (!motivoSanitizado) {
+        setPopupMessage('Informe o motivo do ajuste (obrigatório).')
+        setPopupOpen(true)
         return
       }
 
       if (totalUnidades <= 0) {
-        alert('O total em unidades deve ser maior que zero.')
+        setPopupMessage('O total em unidades deve ser maior que zero.')
+        setPopupOpen(true)
         return
       }
 
@@ -149,7 +163,8 @@ export default function AjustarPage() {
 
       if (errAjuste) {
         console.log('AJUSTE ERROR:', errAjuste)
-        alert('Erro ao salvar ajuste. Veja o console.')
+        setPopupMessage('Erro ao salvar ajuste. Veja o console.')
+        setPopupOpen(true)
         return
       }
 
@@ -166,11 +181,13 @@ export default function AjustarPage() {
 
       if (errMov) {
         console.log('UPDATE MOV ERROR:', errMov)
-        alert('Erro ao atualizar movimentação. Veja o console.')
+        setPopupMessage('Erro ao atualizar movimentação. Veja o console.')
+        setPopupOpen(true)
         return
       }
 
-      alert('Ajuste salvo! Status: RECONFERIR')
+      setPopupMessage('Ajuste salvo! Status: RECONFERIR')
+      setPopupOpen(true)
       router.push('/divergencias')
     } finally {
       setSaving(false)
@@ -220,6 +237,13 @@ export default function AjustarPage() {
   return (
     <div>
       <Menu />
+      <Popup
+        open={popupOpen}
+        title={popupTitle}
+        message={popupMessage}
+        variant="success"
+        onClose={() => setPopupOpen(false)}
+      />
 
       <div className="container">
         <div className="card">
