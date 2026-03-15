@@ -1,11 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/backup-movimentacoes",
-      "schedule": "0 6 * * *",
-      "headers": {
-        "Authorization": "Bearer ${CRON_SECRET}"
-      }
+      "path": "/api/backup-movimentacoes?secret=${CRON_SECRET}",
+      "schedule": "0 6 * * *"
     }
   ]
 }
