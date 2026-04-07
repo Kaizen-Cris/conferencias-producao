@@ -7,7 +7,7 @@ import { getMyRole } from '../../lib/auth'
 import { sanitizeText } from '../../lib/sanitize'
 import { onlyDigits } from '../../lib/onlyDigits'
 
-type Role = 'ADMIN' | 'OPERADOR' | 'CONFERENTE'
+type Role = 'ADMIN' | 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR'
 
 type ItemRow = {
   id: string
@@ -37,7 +37,7 @@ export default function ItensPage() {
   const [editNome, setEditNome] = useState('')
   const [editQtdPorCaixa, setEditQtdPorCaixa] = useState('')
 
-  const canAccess = role === 'ADMIN'
+  const canAccess = role === 'ADMIN' || role === 'SUPERVISOR'
 
   async function loadItems() {
     setLoadingItems(true)

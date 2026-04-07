@@ -35,6 +35,7 @@ export default function HistoricoClient() {
   const [lista, setLista] = useState<Mov[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [restoringId, setRestoringId] = useState<string | null>(null)
   const [popupOpen, setPopupOpen] = useState(false)
   const [popupTitle, setPopupTitle] = useState('Alerta')
   const [popupMessage, setPopupMessage] = useState('')
@@ -49,7 +50,8 @@ export default function HistoricoClient() {
   const [mostrarExcluidos, setMostrarExcluidos] = useState(false)
   const isAdmin = role === 'ADMIN'
   const isConferente = role === 'CONFERENTE'
-  const canDelete = isAdmin || isConferente
+  const isSupervisor = role === 'SUPERVISOR'
+  const canDelete = isAdmin || isConferente || isSupervisor
 
   async function carregar() {
     setLoading(true)
@@ -105,7 +107,7 @@ export default function HistoricoClient() {
 
   async function excluirMov(id: string) {
     if (!canDelete) {
-      showAlert('Apenas administradores e conferentes podem excluir registros.')
+      showAlert('Apenas administradores, conferentes e supervisores podem excluir registros.')
       return
     }
     setDeletingId(id)
@@ -119,6 +121,34 @@ export default function HistoricoClient() {
       return
     }
     setLista((prev) => prev.map((m) => (m.id === id ? { ...m, status: 'EXCLUIDO' } : m)))
+  }
+
+  function showRestoreConfirm(message: string, onConfirm: () => void, title = 'Confirmar Restauração') {
+    setPopupTitle(title)
+    setPopupMessage(message)
+    setPopupConfirmText('Restaurar')
+    setPopupShowCancel(true)
+    setPopupAction(() => onConfirm)
+    setPopupVariant('confirm')
+    setPopupOpen(true)
+  }
+
+  async function restaurarMov(id: string) {
+    if (!isAdmin) {
+      showAlert('Apenas administradores podem restaurar registros excluídos.')
+      return
+    }
+    setRestoringId(id)
+    const { error } = await supabase
+      .from('movimentacoes')
+      .update({ status: 'PENDENTE' })
+      .eq('id', id)
+    setRestoringId(null)
+    if (error) {
+      showAlert('Não foi possível restaurar. Verifique suas permissões e tente novamente.')
+      return
+    }
+    setLista((prev) => prev.map((m) => (m.id === id ? { ...m, status: 'PENDENTE' } : m)))
   }
 
   // role
@@ -142,7 +172,7 @@ export default function HistoricoClient() {
 
   // reload on filters
   useEffect(() => {
-    if (role === 'OPERADOR' || role === 'ADMIN' || role === 'CONFERENTE') carregar()
+    if (role === 'OPERADOR' || role === 'ADMIN' || role === 'CONFERENTE' || role === 'SUPERVISOR') carregar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, statusFiltro, diaFiltro, mostrarExcluidos])
 
@@ -263,7 +293,7 @@ export default function HistoricoClient() {
                     </div>
 
                     {canDelete && (
-                      <div style={{ marginTop: 8 }}>
+                      <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
                         <button
                           className="btn"
                           type="button"
@@ -279,6 +309,20 @@ export default function HistoricoClient() {
                               ? 'Excluído'
                               : 'Excluir'}
                         </button>
+                        {isAdmin && (m.status || '').toUpperCase() === 'EXCLUIDO' && (
+                          <button
+                            className="btn"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              showRestoreConfirm('Tem certeza que deseja restaurar este registro?', () => restaurarMov(m.id))
+                            }}
+                            disabled={restoringId === m.id}
+                            style={{ backgroundColor: '#28a745', color: '#fff' }}
+                          >
+                            {restoringId === m.id ? 'Restaurando...' : 'Restaurar'}
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -312,21 +356,37 @@ export default function HistoricoClient() {
                         <td>{new Date(m.criado_em).toLocaleString()}</td>
                         {canDelete && (
                           <td>
-                            <button
-                              className="btn"
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                showConfirm('Tem certeza que deseja excluir este registro?', () => excluirMov(m.id))
-                              }}
-                              disabled={deletingId === m.id || (m.status || '').toUpperCase() === 'EXCLUIDO'}
-                            >
-                              {deletingId === m.id
-                                ? 'Excluindo...'
-                                : (m.status || '').toUpperCase() === 'EXCLUIDO'
-                                  ? 'Excluído'
-                                  : 'Excluir'}
-                            </button>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button
+                                className="btn"
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  showConfirm('Tem certeza que deseja excluir este registro?', () => excluirMov(m.id))
+                                }}
+                                disabled={deletingId === m.id || (m.status || '').toUpperCase() === 'EXCLUIDO'}
+                              >
+                                {deletingId === m.id
+                                  ? 'Excluindo...'
+                                  : (m.status || '').toUpperCase() === 'EXCLUIDO'
+                                    ? 'Excluído'
+                                    : 'Excluir'}
+                              </button>
+                              {isAdmin && (m.status || '').toUpperCase() === 'EXCLUIDO' && (
+                                <button
+                                  className="btn"
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    showRestoreConfirm('Tem certeza que deseja restaurar este registro?', () => restaurarMov(m.id))
+                                  }}
+                                  disabled={restoringId === m.id}
+                                  style={{ backgroundColor: '#28a745', color: '#fff' }}
+                                >
+                                  {restoringId === m.id ? 'Restaurando...' : 'Restaurar'}
+                                </button>
+                              )}
+                            </div>
                           </td>
                         )}
                       </tr>

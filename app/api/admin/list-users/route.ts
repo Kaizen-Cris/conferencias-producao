@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '../_utils'
 
-type Role = 'OPERADOR' | 'CONFERENTE' | 'ADMIN'
+type Role = 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR' | 'ADMIN'
 
 export async function GET(req: Request) {
   try {

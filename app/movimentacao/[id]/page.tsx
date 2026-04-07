@@ -144,7 +144,7 @@ export default function MovimentacaoDetalhePage() {
 
       if (!movId) return
 
-      if (r === 'ADMIN') carregarTudo(String(movId))
+      if (r === 'ADMIN' || r === 'SUPERVISOR') carregarTudo(String(movId))
       else setLoading(false)
     }
 
@@ -217,7 +217,7 @@ export default function MovimentacaoDetalhePage() {
     )
   }
 
-  if (role !== 'ADMIN') {
+  if (role !== 'ADMIN' && role !== 'SUPERVISOR') {
     return (
       <div>
         <Menu />

@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 import { getMyRole, clearRoleCache } from '../lib/auth'
 
 
-type Role = 'ADMIN' | 'CONFERENTE' | 'OPERADOR' | null
+type Role = 'ADMIN' | 'CONFERENTE' | 'OPERADOR' | 'SUPERVISOR' | null
 
 type NavItem = {
   label: string
@@ -23,13 +23,13 @@ export default function Menu() {
   // abas e permissões (ajuste se quiser)
   const items: NavItem[] = useMemo(
     () => [
-      { label: 'Registrar', path: '/registrar', roles: ['OPERADOR', 'ADMIN'] },
-      { label: 'Pendentes', path: '/pendentes', roles: ['CONFERENTE', 'ADMIN'] },
-      { label: 'Divergências', path: '/divergencias', roles: ['OPERADOR', 'ADMIN'] },
-      { label: 'Histórico', path: '/historico', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE'] },
-      { label: 'Itens', path: '/itens', roles: ['ADMIN'] },
-      { label: 'Configuração', path: '/configuracao', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE'] },
-      { label: 'Usuários', path: '/usuarios', roles: ['ADMIN'] },
+      { label: 'Registrar', path: '/registrar', roles: ['OPERADOR', 'ADMIN', 'SUPERVISOR'] },
+      { label: 'Pendentes', path: '/pendentes', roles: ['CONFERENTE', 'ADMIN', 'SUPERVISOR'] },
+      { label: 'Divergências', path: '/divergencias', roles: ['OPERADOR', 'ADMIN', 'SUPERVISOR'] },
+      { label: 'Histórico', path: '/historico', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE', 'SUPERVISOR'] },
+      { label: 'Itens', path: '/itens', roles: ['ADMIN', 'SUPERVISOR'] },
+      { label: 'Configuração', path: '/configuracao', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE', 'SUPERVISOR'] },
+      { label: 'Usuários', path: '/usuarios', roles: ['ADMIN', 'SUPERVISOR'] },
     ],
     []
   )

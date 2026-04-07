@@ -65,7 +65,7 @@ export default function PendentesPage() {
 
       if (!mounted) return
 
-      if (role === 'CONFERENTE' || role === 'ADMIN') {
+      if (role === 'CONFERENTE' || role === 'ADMIN' || role === 'SUPERVISOR') {
         // ⚠️ role aqui pode estar desatualizado porque setRole é async
         // então usamos "r" diretamente abaixo (ver correção)
       }
@@ -79,7 +79,7 @@ export default function PendentesPage() {
         if (!mounted) return
         setRole(r)
 
-        if (r === 'CONFERENTE' || r === 'ADMIN') {
+        if (r === 'CONFERENTE' || r === 'ADMIN' || r === 'SUPERVISOR') {
           await carregarPendentes()
         } else {
           setLoading(false)
@@ -107,7 +107,7 @@ export default function PendentesPage() {
     )
   }
 
-  if (role !== 'CONFERENTE' && role !== 'ADMIN') {
+  if (role !== 'CONFERENTE' && role !== 'ADMIN' && role !== 'SUPERVISOR') {
     return (
       <div>
         <Menu />

@@ -5,8 +5,9 @@ import Menu from '../../components/menu'
 import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
 import { sanitizeText } from '../../lib/sanitize'
+import Popup from '../../components/popup'
 
-type Role = 'OPERADOR' | 'CONFERENTE' | 'ADMIN'
+type Role = 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR' | 'ADMIN'
 
 type UiUser = {
   id: string
@@ -38,6 +39,12 @@ export default function UsuariosPage() {
   const [users, setUsers] = useState<UiUser[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [popupOpen, setPopupOpen] = useState(false)
+  const [popupMessage, setPopupMessage] = useState('')
+  const [popupAction, setPopupAction] = useState<null | (() => void)>(null)
+  const [editingUserId, setEditingUserId] = useState<string | null>(null)
+  const [editRole, setEditRole] = useState<Role>('OPERADOR')
+  const [savingRole, setSavingRole] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -95,10 +102,13 @@ export default function UsuariosPage() {
     setUsers((json?.users as UiUser[]) || [])
   }
 
-  async function toggleUser(userId: string, nextDisabled: boolean) {
-    const ok = confirm(nextDisabled ? 'Desativar este usuário?' : 'Ativar este usuário?')
-    if (!ok) return
+  function confirmToggleUser(userId: string, nextDisabled: boolean) {
+    setPopupMessage(nextDisabled ? 'Desativar este usuário?' : 'Ativar este usuário?')
+    setPopupAction(() => () => doToggleUser(userId, nextDisabled))
+    setPopupOpen(true)
+  }
 
+  async function doToggleUser(userId: string, nextDisabled: boolean) {
     setMsg(null)
 
     const token = await getTokenOrFail()
@@ -122,6 +132,51 @@ export default function UsuariosPage() {
     }
 
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_disabled: nextDisabled } : u)))
+  }
+
+  async function handleEditRole(userId: string) {
+    const user = users.find((u) => u.id === userId)
+    if (!user) return
+    setEditingUserId(userId)
+    setEditRole(user.role)
+  }
+
+  async function handleSaveRole() {
+    if (!editingUserId) return
+    setSavingRole(true)
+    setMsg(null)
+
+    const token = await getTokenOrFail()
+    if (!token) {
+      setSavingRole(false)
+      return
+    }
+
+    const res = await fetch('/api/admin/update-user-role', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ userId: editingUserId, role: editRole }),
+    })
+
+    const json: any = await safeReadJson(res)
+    setSavingRole(false)
+
+    if (!res.ok) {
+      if (json?.error) return setMsg(json.error)
+      if (json?.__notJson) return setMsg('Erro no servidor (resposta não-JSON).')
+      return setMsg('Erro ao atualizar perfil do usuário.')
+    }
+
+    setUsers((prev) => prev.map((u) => (u.id === editingUserId ? { ...u, role: editRole } : u)))
+    setEditingUserId(null)
+    setMsg('Perfil atualizado com sucesso!')
+  }
+
+  async function toggleUser(userId: string, nextDisabled: boolean) {
+    confirmToggleUser(userId, nextDisabled)
   }
 
   async function handleCreate() {
@@ -197,6 +252,20 @@ export default function UsuariosPage() {
   return (
     <>
       <Menu />
+      <Popup
+        open={popupOpen}
+        title="Confirmacao"
+        message={popupMessage}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        showCancel
+        variant="confirm"
+        onConfirm={popupAction ?? undefined}
+        onClose={() => {
+          setPopupOpen(false)
+          setPopupAction(null)
+        }}
+      />
 
       <div className="container">
         <div className="card">
@@ -257,7 +326,8 @@ export default function UsuariosPage() {
                 <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
                   <option value="OPERADOR">OPERADOR</option>
                   <option value="CONFERENTE">CONFERENTE</option>
-                  <option value="ADMIN">ADMIN</option>
+                  <option value="SUPERVISOR">SUPERVISOR</option>
+                  {role === 'ADMIN' && <option value="ADMIN">ADMIN</option>}
                 </select>
             </div>
           </div>
@@ -299,18 +369,61 @@ export default function UsuariosPage() {
                 <div className="uRowLeft">
                   <div className="uEmail">{u.email}</div>
                   <div className="uMeta">
-                    <span className="uBadge">{u.role}</span>
+                    {editingUserId === u.id ? (
+                      <select
+                        value={editRole}
+                        onChange={(e) => setEditRole(e.target.value as Role)}
+                        style={{ fontSize: 12, padding: '2px 6px', borderRadius: 4, border: '1px solid #ccc' }}
+                      >
+                        <option value="OPERADOR">OPERADOR</option>
+                        <option value="CONFERENTE">CONFERENTE</option>
+                        <option value="SUPERVISOR">SUPERVISOR</option>
+                        {role === 'ADMIN' && <option value="ADMIN">ADMIN</option>}
+                      </select>
+                    ) : (
+                      <span className="uBadge">{u.role}</span>
+                    )}
                     {u.is_disabled && <span className="uBadge uBadgeOff">DESATIVADO</span>}
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  className={`uBtn ${u.is_disabled ? 'uBtnOk' : 'uBtnDanger'}`}
-                  onClick={() => toggleUser(u.id, !u.is_disabled)}
-                >
-                  {u.is_disabled ? 'Ativar' : 'Desativar'}
-                </button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {editingUserId === u.id ? (
+                    <>
+                      <button
+                        type="button"
+                        className="uBtn uBtnPrimary"
+                        onClick={handleSaveRole}
+                        disabled={savingRole}
+                      >
+                        {savingRole ? 'Salvando...' : 'Salvar'}
+                      </button>
+                      <button
+                        type="button"
+                        className="uBtn uBtnGhost"
+                        onClick={() => setEditingUserId(null)}
+                        disabled={savingRole}
+                      >
+                        Cancelar
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="uBtn"
+                      onClick={() => handleEditRole(u.id)}
+                    >
+                      Editar perfil
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={`uBtn ${u.is_disabled ? 'uBtnOk' : 'uBtnDanger'}`}
+                    onClick={() => toggleUser(u.id, !u.is_disabled)}
+                  >
+                    {u.is_disabled ? 'Ativar' : 'Desativar'}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

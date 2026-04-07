@@ -61,7 +61,7 @@ export default function DashboardPage() {
       setRole(r)
       setAuthLoading(false)
 
-      if (r === 'ADMIN') carregar()
+      if (r === 'ADMIN' || r === 'SUPERVISOR') carregar()
     }
     init()
   }, [])
@@ -89,7 +89,7 @@ export default function DashboardPage() {
 
   if (authLoading) return <div style={{ padding: 40 }}>Carregando...</div>
 
-  if (role !== 'ADMIN') {
+  if (role !== 'ADMIN' && role !== 'SUPERVISOR') {
     return (
       <div>
         <Menu />

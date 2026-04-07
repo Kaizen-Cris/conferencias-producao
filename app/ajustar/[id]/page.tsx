@@ -98,7 +98,7 @@ export default function AjustarPage() {
       }
 
       // ✅ se não tem permissão, não carrega e desliga loading
-      if (r !== 'OPERADOR' && r !== 'ADMIN') {
+      if (r !== 'OPERADOR' && r !== 'ADMIN' && r !== 'SUPERVISOR') {
         setLoading(false)
         return
       }
@@ -208,7 +208,7 @@ export default function AjustarPage() {
   }
 
   // ✅ Permissão
-  if (role !== 'OPERADOR' && role !== 'ADMIN') {
+  if (role !== 'OPERADOR' && role !== 'ADMIN' && role !== 'SUPERVISOR') {
     return (
       <div>
         <Menu />

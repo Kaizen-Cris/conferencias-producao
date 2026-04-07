@@ -102,7 +102,7 @@ export default function ConferirPage() {
 
       if (!movId) return
 
-      if (r === 'CONFERENTE' || r === 'ADMIN') {
+      if (r === 'CONFERENTE' || r === 'ADMIN' || r === 'SUPERVISOR') {
         carregar(String(movId))
       }
     }
@@ -212,7 +212,7 @@ export default function ConferirPage() {
     )
   }
 
-  if (role !== 'CONFERENTE' && role !== 'ADMIN') {
+  if (role !== 'CONFERENTE' && role !== 'ADMIN' && role !== 'SUPERVISOR') {
     return (
       <div>
         <Menu />

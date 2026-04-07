@@ -59,7 +59,7 @@ export default function DivergenciasPage() {
       setRole(r)
       setAuthLoading(false)
 
-      if (r === 'OPERADOR' || r === 'ADMIN') {
+      if (r === 'OPERADOR' || r === 'ADMIN' || r === 'SUPERVISOR') {
         carregar()
       }
     }
@@ -78,7 +78,7 @@ export default function DivergenciasPage() {
       )
     }
 
-  if (role !== 'OPERADOR' && role !== 'ADMIN') {
+  if (role !== 'OPERADOR' && role !== 'ADMIN' && role !== 'SUPERVISOR') {
     return (
       <div>
         <Menu />

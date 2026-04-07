@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '../_utils'
 import { sanitizeText } from '../../../../lib/sanitize'
 
-type Role = 'OPERADOR' | 'CONFERENTE' | 'ADMIN'
+type Role = 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR' | 'ADMIN'
 
 export async function POST(req: Request) {
   try {
