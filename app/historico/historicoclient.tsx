@@ -47,6 +47,8 @@ export default function HistoricoClient() {
   const [busca, setBusca] = useState('')
   const [diaFiltro, setDiaFiltro] = useState<string>('')
   const isAdmin = role === 'ADMIN'
+  const isConferente = role === 'CONFERENTE'
+  const canDelete = isAdmin || isConferente
 
   async function carregar() {
     setLoading(true)
@@ -97,8 +99,8 @@ export default function HistoricoClient() {
   }
 
   async function excluirMov(id: string) {
-    if (!isAdmin) {
-      showAlert('Apenas administradores podem excluir registros.')
+    if (!canDelete) {
+      showAlert('Apenas administradores e conferentes podem excluir registros.')
       return
     }
     setDeletingId(id)
@@ -233,7 +235,7 @@ export default function HistoricoClient() {
                       <div><b>Data:</b> {new Date(m.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div>
                     </div>
 
-                    {isAdmin && (
+                    {canDelete && (
                       <div style={{ marginTop: 8 }}>
                         <button
                           className="btn"
@@ -265,7 +267,7 @@ export default function HistoricoClient() {
                       <th>Total (un)</th>
                       <th>Status</th>
                       <th>Criado em</th>
-                      {isAdmin && <th>Ações</th>}
+                      {canDelete && <th>Ações</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -281,7 +283,7 @@ export default function HistoricoClient() {
                         <td>{m.qtd_informada}</td>
                         <td><StatusBadge status={m.status} /></td>
                         <td>{new Date(m.criado_em).toLocaleString()}</td>
-                        {isAdmin && (
+                        {canDelete && (
                           <td>
                             <button
                               className="btn"
