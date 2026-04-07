@@ -5,6 +5,7 @@ import Menu from '../../components/menu'
 import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
 import { sanitizeText } from '../../lib/sanitize'
+import { onlyDigits } from '../../lib/onlyDigits'
 
 type Role = 'ADMIN' | 'OPERADOR' | 'CONFERENTE'
 
@@ -12,6 +13,7 @@ type ItemRow = {
   id: string
   nome: string
   ativo: boolean
+  qtd_por_caixa: number | null
 }
 
 type FiltroStatus = 'TODOS' | 'ATIVOS' | 'INATIVOS'
@@ -25,6 +27,7 @@ export default function ItensPage() {
   const [msg, setMsg] = useState<string | null>(null)
 
   const [novoNome, setNovoNome] = useState('')
+  const [novaQtdPorCaixa, setNovaQtdPorCaixa] = useState('')
   const [creating, setCreating] = useState(false)
 
   const [busca, setBusca] = useState('')
@@ -32,27 +35,9 @@ export default function ItensPage() {
 
   const [editId, setEditId] = useState<string | null>(null)
   const [editNome, setEditNome] = useState('')
+  const [editQtdPorCaixa, setEditQtdPorCaixa] = useState('')
 
   const canAccess = role === 'ADMIN'
-
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      setLoadingRole(true)
-      const r = await getMyRole()
-      if (!mounted) return
-      setRole(r as Role | null)
-      setLoadingRole(false)
-    })()
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  useEffect(() => {
-    if (canAccess) loadItems()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canAccess])
 
   async function loadItems() {
     setLoadingItems(true)
@@ -60,7 +45,7 @@ export default function ItensPage() {
 
     const { data, error } = await supabase
       .from('itens')
-      .select('id,nome,ativo')
+      .select('id,nome,ativo,qtd_por_caixa')
       .order('nome', { ascending: true })
 
     setLoadingItems(false)
@@ -74,16 +59,36 @@ export default function ItensPage() {
     setItems((data as ItemRow[]) ?? [])
   }
 
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      setLoadingRole(true)
+      const r = await getMyRole()
+      if (!mounted) return
+      setRole(r as Role | null)
+      setLoadingRole(false)
+      if (r === 'ADMIN') loadItems()
+    })()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   async function handleCreate() {
     setMsg(null)
 
     const nomeSanitizado = sanitizeText(novoNome, { maxLen: 80 })
     if (!nomeSanitizado) return setMsg('Informe o nome do item.')
 
+    const qtdPorCaixaNum = Number(novaQtdPorCaixa)
+    if (!Number.isInteger(qtdPorCaixaNum) || qtdPorCaixaNum <= 0) {
+      return setMsg('Informe uma quantidade por caixa válida e maior que zero.')
+    }
+
     setCreating(true)
     const { error } = await supabase
       .from('itens')
-      .insert([{ nome: nomeSanitizado, ativo: true }])
+      .insert([{ nome: nomeSanitizado, ativo: true, qtd_por_caixa: qtdPorCaixaNum }])
 
     setCreating(false)
 
@@ -93,29 +98,38 @@ export default function ItensPage() {
     }
 
     setNovoNome('')
+    setNovaQtdPorCaixa('')
     loadItems()
   }
 
   function startEdit(item: ItemRow) {
     setEditId(item.id)
     setEditNome(item.nome)
+    setEditQtdPorCaixa(item.qtd_por_caixa != null ? String(item.qtd_por_caixa) : '')
   }
 
   function cancelEdit() {
     setEditId(null)
     setEditNome('')
+    setEditQtdPorCaixa('')
   }
 
   async function saveEdit() {
     if (!editId) return
+
     const nomeSanitizado = sanitizeText(editNome, { maxLen: 80 })
     if (!nomeSanitizado) return setMsg('Informe o nome do item.')
+
+    const qtdPorCaixaNum = Number(editQtdPorCaixa)
+    if (!Number.isInteger(qtdPorCaixaNum) || qtdPorCaixaNum <= 0) {
+      return setMsg('Informe uma quantidade por caixa válida e maior que zero.')
+    }
 
     setMsg(null)
 
     const { error } = await supabase
       .from('itens')
-      .update({ nome: nomeSanitizado })
+      .update({ nome: nomeSanitizado, qtd_por_caixa: qtdPorCaixaNum })
       .eq('id', editId)
 
     if (error) {
@@ -211,6 +225,16 @@ export default function ItensPage() {
                 autoComplete="off"
               />
             </div>
+
+            <div className="uField">
+              <label>Quantidade por caixa</label>
+              <input
+                value={novaQtdPorCaixa}
+                onChange={(e) => setNovaQtdPorCaixa(onlyDigits(e.target.value))}
+                placeholder="ex: 12"
+                inputMode="numeric"
+              />
+            </div>
           </div>
 
           <div className="uActions">
@@ -223,6 +247,7 @@ export default function ItensPage() {
               type="button"
               onClick={() => {
                 setNovoNome('')
+                setNovaQtdPorCaixa('')
                 setMsg(null)
               }}
             >
@@ -264,14 +289,27 @@ export default function ItensPage() {
               <div key={item.id} className={`uRow ${item.ativo ? '' : 'isDisabled'}`}>
                 <div className="uRowLeft">
                   {editId === item.id ? (
-                    <input
-                      className="input"
-                      value={editNome}
-                      onChange={(e) => setEditNome(e.target.value)}
-                      style={{ marginBottom: 8 }}
-                    />
+                    <>
+                      <input
+                        className="input"
+                        value={editNome}
+                        onChange={(e) => setEditNome(e.target.value)}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <input
+                        className="input"
+                        value={editQtdPorCaixa}
+                        onChange={(e) => setEditQtdPorCaixa(onlyDigits(e.target.value))}
+                        placeholder="Qtd por caixa"
+                        inputMode="numeric"
+                        style={{ marginBottom: 8 }}
+                      />
+                    </>
                   ) : (
-                    <div className="uEmail">{item.nome}</div>
+                    <>
+                      <div className="uEmail">{item.nome}</div>
+                      <div className="uMeta">Qtd/caixa: {item.qtd_por_caixa ?? 'Não definido'}</div>
+                    </>
                   )}
                   <div className="uMeta">
                     {item.ativo ? (

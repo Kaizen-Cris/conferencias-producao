@@ -8,7 +8,6 @@ import Menu from '../../../components/menu'
 import { onlyDigits } from '../../../lib/onlyDigits'
 import Popup from '../../../components/popup'
 
-
 type Mov = {
   id: string
   item: string
@@ -25,8 +24,6 @@ export default function ConferirPage() {
   const [role, setRole] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
 
-
-  // params.id pode ser string ou string[]
   const movIdRaw = params?.id
   const movId = Array.isArray(movIdRaw) ? movIdRaw[0] : movIdRaw
 
@@ -38,6 +35,7 @@ export default function ConferirPage() {
   const [popupOpen, setPopupOpen] = useState(false)
   const [popupTitle, setPopupTitle] = useState('Aviso')
   const [popupMessage, setPopupMessage] = useState('')
+  const [popupConfirmText, setPopupConfirmText] = useState('OK')
   const [popupAction, setPopupAction] = useState<null | (() => void)>(null)
   const [popupVariant, setPopupVariant] = useState<'success' | 'alert' | 'warning' | 'confirm'>('warning')
 
@@ -50,18 +48,12 @@ export default function ConferirPage() {
     setPopupTitle(title)
     setPopupMessage(message)
     setPopupVariant(variant)
-    setPopupAction(action ?? null)
+    setPopupConfirmText(action ? 'Continuar' : 'OK')
+    setPopupAction(action ? () => action : null)
     setPopupOpen(true)
   }
 
-  const n = (v: string) => {
-  const x = Number(v)
-  return Number.isFinite(x) ? Math.trunc(x) : 0
-  }
-
-  const totalConferido =
-  Number(caixas || 0) * Number(qtdPorCaixa || 0) + Number(avulsas || 0)
-
+  const totalConferido = Number(caixas || 0) * Number(qtdPorCaixa || 0) + Number(avulsas || 0)
 
   async function carregar(id: string) {
     setLoading(true)
@@ -108,7 +100,6 @@ export default function ConferirPage() {
     if (!mov) return
     const fase = mov.status === 'RECONFERIR' ? 2 : 1
 
-    // Regra de ouro: não pode conferir a própria movimentação
     if (userId === mov.criado_por) {
       showAlert('Você não pode conferir uma movimentação criada por você.', 'Aviso', 'warning')
       return
@@ -121,8 +112,6 @@ export default function ConferirPage() {
     }
 
     const novoStatus = qtdInt === mov.qtd_informada ? 'APROVADO' : 'DIVERGENTE'
-
-    // 0) impedir conferência duplicada
 
     const { data: confExistente, error: confErr } = await supabase
       .from('conferencias')
@@ -146,9 +135,6 @@ export default function ConferirPage() {
       return
     }
 
-
-
-    // 1) inserir conferência
     const { error: errConf } = await supabase.from('conferencias').insert([
       {
         movimentacao_id: mov.id,
@@ -165,7 +151,6 @@ export default function ConferirPage() {
       return
     }
 
-    // 2) atualizar status
     const { error: errMov } = await supabase
       .from('movimentacoes')
       .update({ status: novoStatus })
@@ -178,9 +163,19 @@ export default function ConferirPage() {
     }
 
     if (novoStatus === 'APROVADO') {
-      showAlert(`Conferência salva! Status: ${novoStatus}`, 'Sucesso', 'success', () => router.push('/pendentes'))
+      showAlert(
+        `Conferência salva! Status: ${novoStatus}.`,
+        'Sucesso',
+        'confirm',
+        () => router.push('/pendentes')
+      )
     } else {
-      showAlert(`Conferência salva! Status: ${novoStatus}`, 'Alerta', 'alert', () => router.push('/pendentes'))
+      showAlert(
+        `Conferência salva! Status: ${novoStatus}. Você será redirecionado para a lista de pendentes.`,
+        'Alerta',
+        'confirm',
+        () => router.push('/pendentes')
+      )
     }
   }
 
@@ -227,6 +222,7 @@ export default function ConferirPage() {
         open={popupOpen}
         title={popupTitle}
         message={popupMessage}
+        confirmText={popupConfirmText}
         variant={popupVariant}
         onConfirm={popupAction ?? undefined}
         onClose={() => {
@@ -296,5 +292,4 @@ export default function ConferirPage() {
       </div>
     </div>
   )
-
 }

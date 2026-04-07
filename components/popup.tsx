@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+
 type PopupProps = {
   open: boolean
   title?: string
@@ -23,15 +25,36 @@ export default function Popup({
   onConfirm,
   onClose,
 }: PopupProps) {
+  useEffect(() => {
+    if (!open) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open, onClose])
+
   if (!open) return null
+
+  const isConfirm = variant === 'confirm'
+  const shouldShowCancel = showCancel || isConfirm
 
   const palette =
     variant === 'success'
-      ? { border: '#10b981', bg: '#ecfdf5', title: '#047857', icon: '✓' }
+      ? { border: '#10b981', bg: '#ecfdf5', title: '#047857', icon: 'OK' }
       : variant === 'alert'
         ? { border: '#ef4444', bg: '#fef2f2', title: '#b91c1c', icon: '!' }
         : variant === 'confirm'
-          ? { border: '#2563eb', bg: '#eff6ff', title: '#1d4ed8', icon: '?' }
+          ? { border: '#ef4444', bg: '#fef2f2', title: '#b91c1c', icon: '?' }
           : { border: '#f59e0b', bg: '#fffbeb', title: '#92400e', icon: '!' }
 
   const fallbackTitle =
@@ -40,15 +63,28 @@ export default function Popup({
       : variant === 'alert'
         ? 'Alerta'
         : variant === 'confirm'
-          ? 'Confirmação'
+          ? 'Confirmacao'
           : 'Aviso'
+
+  const helperText =
+    variant === 'success'
+      ? 'Operacao concluida'
+      : variant === 'alert'
+        ? 'Atencao necessaria'
+        : variant === 'confirm'
+          ? 'Confirme para continuar'
+          : 'Verifique esta informacao'
 
   return (
     <div
       className="modal-backdrop"
       role="dialog"
       aria-modal="true"
-      onClick={onClose}
+      aria-labelledby="popup-title"
+      aria-describedby="popup-message"
+      onClick={() => {
+        if (!isConfirm) onClose()
+      }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -94,21 +130,19 @@ export default function Popup({
             {palette.icon}
           </div>
           <div style={{ minWidth: 0 }}>
-            <h3 className="modal-title" style={{ color: palette.title, margin: 0 }}>
+            <h3 id="popup-title" className="modal-title" style={{ color: palette.title, margin: 0 }}>
               {title || fallbackTitle}
             </h3>
-            <div style={{ color: '#6b7280', fontSize: 12, marginTop: 2 }}>
-              {variant === 'success' ? 'Operação concluída' : variant === 'alert' ? 'Atenção necessária' : variant === 'confirm' ? 'Confirme para continuar' : 'Verifique esta informação'}
-            </div>
+            <div style={{ color: '#6b7280', fontSize: 12, marginTop: 2 }}>{helperText}</div>
           </div>
         </div>
 
-        <div className="modal-body" style={{ margin: 0, fontSize: 14 }}>
+        <div id="popup-message" className="modal-body" style={{ margin: 0, fontSize: 14 }}>
           {message}
         </div>
 
         <div className="modal-actions">
-          {showCancel && (
+          {shouldShowCancel && (
             <button
               className="btn"
               type="button"
@@ -126,8 +160,8 @@ export default function Popup({
             className="btn"
             type="button"
             onClick={() => {
-              if (onConfirm) onConfirm()
               onClose()
+              if (onConfirm) onConfirm()
             }}
             style={{
               background: palette.border,

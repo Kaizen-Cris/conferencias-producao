@@ -174,7 +174,7 @@ export default function ConfiguracaoPage() {
         confirmText="Restaurar"
         cancelText="Cancelar"
         showCancel
-        variant="alert"
+        variant="confirm"
         onConfirm={popupAction ?? undefined}
         onClose={() => {
           setPopupOpen(false)

@@ -9,7 +9,11 @@ import { getMyRole } from '../../lib/auth'
 import { sanitizeText } from '../../lib/sanitize'
 import Popup from '../../components/popup'
 
-type ItemRow = { id: string; nome: string }
+type ItemRow = {
+  id: string
+  nome: string
+  qtd_por_caixa: number | null
+}
 
 export default function RegistrarPage() {
   const router = useRouter()
@@ -17,13 +21,10 @@ export default function RegistrarPage() {
   const [role, setRole] = useState<string | null>(null)
   const [guardLoading, setGuardLoading] = useState(true)
 
-  // form movimentação
   const [lote, setLote] = useState('')
   const [caixas, setCaixas] = useState('')
-  const [qtdPorCaixa, setQtdPorCaixa] = useState('')
   const [unidadesAvulsas, setUnidadesAvulsas] = useState('0')
 
-  // itens
   const [itens, setItens] = useState<ItemRow[]>([])
   const [itemId, setItemId] = useState('')
   const [itemBusca, setItemBusca] = useState('')
@@ -31,6 +32,13 @@ export default function RegistrarPage() {
   const [popupTitle, setPopupTitle] = useState('Sucesso')
   const [popupMessage, setPopupMessage] = useState('')
   const [popupVariant, setPopupVariant] = useState<'success' | 'alert' | 'warning' | 'confirm'>('warning')
+
+  const itemSelecionado = useMemo(() => itens.find((x) => x.id === itemId) ?? null, [itens, itemId])
+  const qtdPorCaixa = useMemo(() => {
+    if (!itemSelecionado) return ''
+    const qtdPadrao = Number(itemSelecionado.qtd_por_caixa)
+    return Number.isFinite(qtdPadrao) && qtdPadrao > 0 ? String(qtdPadrao) : ''
+  }, [itemSelecionado])
 
   function showAlert(message: string, title = 'Sucesso') {
     setPopupTitle(title)
@@ -51,7 +59,6 @@ export default function RegistrarPage() {
     return cOk * qOk + aOk
   }, [caixas, qtdPorCaixa, unidadesAvulsas])
 
-  // Guard: garante que conferente não entra aqui
   useEffect(() => {
     let mounted = true
 
@@ -81,17 +88,18 @@ export default function RegistrarPage() {
     }
 
     guard()
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [router])
 
-  // carregar itens (somente quando passou no guard)
   useEffect(() => {
     async function carregarItens() {
       if (!role) return
 
       const { data, error } = await supabase
         .from('itens')
-        .select('id,nome')
+        .select('id,nome,qtd_por_caixa')
         .eq('ativo', true)
         .order('nome', { ascending: true })
 
@@ -119,9 +127,14 @@ export default function RegistrarPage() {
       return
     }
 
-    const itemSelecionado = itens.find((x) => x.id === itemId)
     if (!itemSelecionado) {
       showAlert('Item inválido. Recarregue a página e tente novamente.')
+      return
+    }
+
+    const qtdPadrao = Number(itemSelecionado.qtd_por_caixa)
+    if (!Number.isFinite(qtdPadrao) || qtdPadrao <= 0) {
+      showAlert('Este item está sem quantidade por caixa cadastrada. Atualize o item antes de registrar.')
       return
     }
 
@@ -136,7 +149,6 @@ export default function RegistrarPage() {
     }
 
     const caixasNum = Number(caixas || 0)
-    const qtdPorCaixaNum = Number(qtdPorCaixa || 0)
     const avulsasNum = Number(unidadesAvulsas || 0)
 
     const { error } = await supabase.from('movimentacoes').insert([
@@ -145,7 +157,7 @@ export default function RegistrarPage() {
         lote: lote.trim(),
         qtd_informada: totalUnidades,
         caixas: caixasNum,
-        qtd_por_caixa: qtdPorCaixaNum,
+        qtd_por_caixa: qtdPadrao,
         unidades_avulsas: avulsasNum,
         status: 'PENDENTE',
         criado_por: userId,
@@ -164,14 +176,11 @@ export default function RegistrarPage() {
     setItemBusca('')
     setLote('')
     setCaixas('')
-    setQtdPorCaixa('')
     setUnidadesAvulsas('0')
   }
 
   const buscaSanitizada = sanitizeText(itemBusca, { maxLen: 80 }).toLowerCase()
-  const itensFiltrados = itens.filter((x) =>
-    x.nome.toLowerCase().includes(buscaSanitizada)
-  )
+  const itensFiltrados = itens.filter((x) => x.nome.toLowerCase().includes(buscaSanitizada))
 
   if (guardLoading) {
     return (
@@ -250,9 +259,9 @@ export default function RegistrarPage() {
           <input
             className="input"
             value={qtdPorCaixa}
-            onChange={(e) => setQtdPorCaixa(onlyDigits(e.target.value))}
-            placeholder="Ex: 12"
+            placeholder={itemSelecionado ? 'Carregado automaticamente' : 'Selecione um item'}
             inputMode="numeric"
+            disabled
           />
 
           <label>Unidades avulsas (opcional)</label>

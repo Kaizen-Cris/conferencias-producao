@@ -92,7 +92,7 @@ export default function HistoricoClient() {
     setPopupConfirmText('Excluir')
     setPopupShowCancel(true)
     setPopupAction(() => onConfirm)
-    setPopupVariant('alert')
+    setPopupVariant('confirm')
     setPopupOpen(true)
   }
 
