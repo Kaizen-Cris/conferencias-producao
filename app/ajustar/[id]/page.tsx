@@ -42,13 +42,13 @@ export default function AjustarPage() {
 
   // campos de ajuste
   const [caixas, setCaixas] = useState('')
-  const [qtdPorCaixa, setQtdPorCaixa] = useState('')
+  const [qtdPorCaixaItem, setQtdPorCaixaItem] = useState<number | null>(null)
   const [avulsas, setAvulsas] = useState('0')
   const [motivo, setMotivo] = useState('')
 
   const totalUnidades = useMemo(() => {
     const c = Number(caixas || 0)
-    const q = Number(qtdPorCaixa || 0)
+    const q = Number(qtdPorCaixaItem || 0)
     const a = Number(avulsas || 0)
 
     const cOk = Number.isFinite(c) ? c : 0
@@ -56,7 +56,7 @@ export default function AjustarPage() {
     const aOk = Number.isFinite(a) ? a : 0
 
     return cOk * qOk + aOk
-  }, [caixas, qtdPorCaixa, avulsas])
+  }, [caixas, qtdPorCaixaItem, avulsas])
 
   async function carregar(id: string) {
     setLoading(true)
@@ -77,8 +77,18 @@ export default function AjustarPage() {
 
     if (m) {
       setCaixas(String(m.caixas ?? ''))
-      setQtdPorCaixa(String(m.qtd_por_caixa ?? ''))
       setAvulsas(String(m.unidades_avulsas ?? 0))
+
+      const { data: itemData } = await supabase
+        .from('itens')
+        .select('qtd_por_caixa')
+        .eq('nome', m.item)
+        .eq('ativo', true)
+        .single()
+
+      if (itemData) {
+        setQtdPorCaixaItem(itemData.qtd_por_caixa)
+      }
     }
 
     setLoading(false)
@@ -147,7 +157,7 @@ export default function AjustarPage() {
       }
 
       const caixasOk = Number(caixas || 0)
-      const qtdPorCaixaOk = Number(qtdPorCaixa || 0)
+      const qtdPorCaixaOk = qtdPorCaixaItem ?? 0
       const avulsasOk = Number(avulsas || 0)
 
       const { error: errAjuste } = await supabase.from('ajustes').insert([
@@ -277,11 +287,10 @@ export default function AjustarPage() {
           <label>Quantidade por caixa</label>
           <input
             className="input"
-            value={qtdPorCaixa}
-            onChange={(e) => setQtdPorCaixa(onlyDigits(e.target.value))}
-            disabled={saving}
-            placeholder="Ex: 10"
+            value={qtdPorCaixaItem !== null && Number.isFinite(qtdPorCaixaItem) && qtdPorCaixaItem > 0 ? String(qtdPorCaixaItem) : ''}
+            placeholder={qtdPorCaixaItem !== null ? 'Carregado automaticamente' : 'Carregando...'}
             inputMode="numeric"
+            disabled
           />
 
           <div style={{ height: 10 }} />
