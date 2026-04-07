@@ -67,7 +67,7 @@ export default function ItensPage() {
       if (!mounted) return
       setRole(r as Role | null)
       setLoadingRole(false)
-      if (r === 'ADMIN') loadItems()
+      if (r === 'ADMIN' || r === 'SUPERVISOR') loadItems()
     })()
     return () => {
       mounted = false
