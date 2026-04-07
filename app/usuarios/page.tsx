@@ -61,7 +61,7 @@ export default function UsuariosPage() {
   }, [])
 
   useEffect(() => {
-    if (role === 'ADMIN') loadUsers()
+    if (role === 'ADMIN' || role === 'SUPERVISOR') loadUsers()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role])
 
@@ -235,7 +235,7 @@ export default function UsuariosPage() {
     )
   }
 
-  if (role !== 'ADMIN') {
+  if (role !== 'ADMIN' && role !== 'SUPERVISOR') {
     return (
       <>
         <Menu />
@@ -388,33 +388,35 @@ export default function UsuariosPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 8 }}>
-                  {editingUserId === u.id ? (
-                    <>
+                  {role === 'ADMIN' && (
+                    editingUserId === u.id ? (
+                      <>
+                        <button
+                          type="button"
+                          className="uBtn uBtnPrimary"
+                          onClick={handleSaveRole}
+                          disabled={savingRole}
+                        >
+                          {savingRole ? 'Salvando...' : 'Salvar'}
+                        </button>
+                        <button
+                          type="button"
+                          className="uBtn uBtnGhost"
+                          onClick={() => setEditingUserId(null)}
+                          disabled={savingRole}
+                        >
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
                       <button
                         type="button"
-                        className="uBtn uBtnPrimary"
-                        onClick={handleSaveRole}
-                        disabled={savingRole}
+                        className="uBtn"
+                        onClick={() => handleEditRole(u.id)}
                       >
-                        {savingRole ? 'Salvando...' : 'Salvar'}
+                        Editar perfil
                       </button>
-                      <button
-                        type="button"
-                        className="uBtn uBtnGhost"
-                        onClick={() => setEditingUserId(null)}
-                        disabled={savingRole}
-                      >
-                        Cancelar
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      className="uBtn"
-                      onClick={() => handleEditRole(u.id)}
-                    >
-                      Editar perfil
-                    </button>
+                    )
                   )}
                   <button
                     type="button"

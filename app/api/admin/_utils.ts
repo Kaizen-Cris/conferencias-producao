@@ -74,3 +74,48 @@ export async function requireAdmin(req: Request): Promise<Gate> {
     return { error: NextResponse.json({ error: e?.message || 'Erro interno.' }, { status: 500 }) }
   }
 }
+
+export async function requireAdminOrSupervisor(req: Request): Promise<Gate> {
+  try {
+    const { supabaseUrl, anonKey, serviceKey } = getEnv()
+
+    const auth = req.headers.get('authorization') || ''
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
+
+    if (!token) {
+      return { error: NextResponse.json({ error: 'Não autorizado (sem token).' }, { status: 401 }) }
+    }
+
+    const publicClient = createClient(supabaseUrl, anonKey)
+    const { data: userData, error: userErr } = await publicClient.auth.getUser(token)
+
+    if (userErr || !userData.user) {
+      return { error: NextResponse.json({ error: 'Sessão inválida.' }, { status: 401 }) }
+    }
+
+    const admin = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+
+    const { data: prof, error: profErr } = await admin
+      .from('profiles')
+      .select('role')
+      .eq('id', userData.user.id)
+      .maybeSingle()
+
+    if (profErr) {
+      return {
+        error: NextResponse.json({ error: `Erro ao validar permissão: ${profErr.message}` }, { status: 500 }),
+      }
+    }
+
+    if (prof?.role !== 'ADMIN' && prof?.role !== 'SUPERVISOR') {
+      return { error: NextResponse.json({ error: 'Sem permissão.' }, { status: 403 }) }
+    }
+
+    return { admin, callerId: userData.user.id }
+  } catch (e: any) {
+    console.error('[requireAdminOrSupervisor] ERRO:', e?.message || e)
+    return { error: NextResponse.json({ error: e?.message || 'Erro interno.' }, { status: 500 }) }
+  }
+}

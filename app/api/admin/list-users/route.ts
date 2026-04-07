@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import { requireAdmin } from '../_utils'
+import { requireAdminOrSupervisor } from '../_utils'
 
 type Role = 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR' | 'ADMIN'
 
 export async function GET(req: Request) {
   try {
-    const gate = await requireAdmin(req)
+    const gate = await requireAdminOrSupervisor(req)
     if ('error' in gate) return gate.error
 
     const { admin } = gate

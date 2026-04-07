@@ -110,7 +110,6 @@ export default function MovimentacaoDetalhePage() {
 
 
     console.log('CONF DETALHE (RAW):', confData, confErr)
-    // ✅ importante: tipa o estado, mas não força formato de profiles aqui
     setConfs((confData ?? []) as unknown as Conf[])
 
     const { data: ajData, error: ajErr } = await supabase
