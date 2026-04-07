@@ -18,6 +18,12 @@ type Mov = {
   criado_em: string
 }
 
+type ItemRow = {
+  id: string
+  nome: string
+  qtd_por_caixa: number | null
+}
+
 export default function ConferirPage() {
   const params = useParams()
   const router = useRouter()
@@ -28,9 +34,9 @@ export default function ConferirPage() {
   const movId = Array.isArray(movIdRaw) ? movIdRaw[0] : movIdRaw
 
   const [mov, setMov] = useState<Mov | null>(null)
+  const [qtdPorCaixaItem, setQtdPorCaixaItem] = useState<number | null>(null)
   const [caixas, setCaixas] = useState('')
-  const [qtdPorCaixa, setQtdPorCaixa] = useState('')
-  const [avulsas, setAvulsas] = useState('')
+  const [avulsas, setAvulsas] = useState('0')
   const [loading, setLoading] = useState(true)
   const [popupOpen, setPopupOpen] = useState(false)
   const [popupTitle, setPopupTitle] = useState('Aviso')
@@ -53,7 +59,9 @@ export default function ConferirPage() {
     setPopupOpen(true)
   }
 
-  const totalConferido = Number(caixas || 0) * Number(qtdPorCaixa || 0) + Number(avulsas || 0)
+  const totalConferido = Number(caixas || 0) * Number(qtdPorCaixaItem || 0) + Number(avulsas || 0)
+
+  const qtdPorCaixaDisplay = qtdPorCaixaItem !== null && Number.isFinite(qtdPorCaixaItem) && qtdPorCaixaItem > 0 ? String(qtdPorCaixaItem) : ''
 
   async function carregar(id: string) {
     setLoading(true)
@@ -68,6 +76,20 @@ export default function ConferirPage() {
     console.log('MOV ERROR:', error)
 
     setMov((data as Mov) ?? null)
+
+    if (data && (data as Mov).item) {
+      const { data: itemData } = await supabase
+        .from('itens')
+        .select('qtd_por_caixa')
+        .eq('nome', (data as Mov).item)
+        .eq('ativo', true)
+        .single()
+
+      if (itemData) {
+        setQtdPorCaixaItem((itemData as ItemRow).qtd_por_caixa)
+      }
+    }
+
     setLoading(false)
   }
 
@@ -262,10 +284,10 @@ export default function ConferirPage() {
           <label>Quantidade por caixa</label>
           <input
             className="input"
-            value={qtdPorCaixa}
-            onChange={(e) => setQtdPorCaixa(onlyDigits(e.target.value))}
-            placeholder="Ex: 10"
+            value={qtdPorCaixaDisplay}
+            placeholder={qtdPorCaixaItem ? 'Carregado automaticamente' : 'Carregando...'}
             inputMode="numeric"
+            disabled
           />
 
           <div style={{ height: 10 }} />

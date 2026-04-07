@@ -46,6 +46,7 @@ export default function HistoricoClient() {
   const [statusFiltro, setStatusFiltro] = useState('TODOS')
   const [busca, setBusca] = useState('')
   const [diaFiltro, setDiaFiltro] = useState<string>('')
+  const [mostrarExcluidos, setMostrarExcluidos] = useState(false)
   const isAdmin = role === 'ADMIN'
   const isConferente = role === 'CONFERENTE'
   const canDelete = isAdmin || isConferente
@@ -68,6 +69,10 @@ export default function HistoricoClient() {
 
     const { data } = await q
     let rows = ((data as Mov[]) ?? [])
+
+    if (!mostrarExcluidos) {
+      rows = rows.filter((m) => (m.status || '').toUpperCase() !== 'EXCLUIDO')
+    }
 
     if (busca.trim()) {
       const b = busca.trim().toLowerCase()
@@ -137,9 +142,9 @@ export default function HistoricoClient() {
 
   // reload on filters
   useEffect(() => {
-    if (role !== 'OPERADOR' && role !== 'ADMIN' && role !== 'CONFERENTE') carregar()
+    if (role === 'OPERADOR' || role === 'ADMIN' || role === 'CONFERENTE') carregar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, statusFiltro, diaFiltro])
+  }, [role, statusFiltro, diaFiltro, mostrarExcluidos])
 
   if (authLoading) {
     return (
@@ -208,6 +213,28 @@ export default function HistoricoClient() {
             />
 
             <button className="btn" onClick={carregar}>Buscar</button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                setMostrarExcluidos((prev) => !prev)
+              }}
+              style={{
+                backgroundColor: mostrarExcluidos ? '#dc3545' : '#28a745',
+                color: '#fff',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 14,
+              }}
+            >
+              {mostrarExcluidos ? 'Ocultar excluídos' : 'Mostrar excluídos'}
+            </button>
           </div>
 
           {loading && <p>Carregando...</p>}
