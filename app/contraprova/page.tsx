@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import Menu from '../../components/menu'
 import { onlyDigits } from '../../lib/onlyDigits'
@@ -9,7 +9,8 @@ import { getMyRole } from '../../lib/auth'
 import { sanitizeText } from '../../lib/sanitize'
 import Popup from '../../components/popup'
 import DatePickerInput from '@/components/DatePickerInput'
-import { FaFilter as Filter } from 'react-icons/fa'
+import { FaFilter as Filter, FaUpload as Upload } from 'react-icons/fa'
+import * as XLSX from 'xlsx'
 
 type ItemRow = {
   id: string
@@ -56,6 +57,11 @@ export default function ContraprovaPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editData, setEditData] = useState<ContraprovaRow | null>(null)
   const [popupAction, setPopupAction] = useState<(() => void) | null>(null)
+  const [importing, setImporting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const buscaSanitizada = sanitizeText(itemBusca, { maxLen: 80 }).toLowerCase()
+  const itensFiltrados = itens.filter((x) => x.nome.toLowerCase().includes(buscaSanitizada))
 
   const itemSelecionado = useMemo(() => itens.find((x) => x.id === itemId) ?? null, [itens, itemId])
   const isAdmin = role === 'ADMIN'
@@ -361,8 +367,94 @@ export default function ContraprovaPage() {
     }
   }
 
-  const buscaSanitizada = sanitizeText(itemBusca, { maxLen: 80 }).toLowerCase()
-  const itensFiltrados = itens.filter((x) => x.nome.toLowerCase().includes(buscaSanitizada))
+  async function handleImportarExcel(file: File) {
+    setImporting(true)
+    try {
+      const buffer = await file.arrayBuffer()
+      const workbook = XLSX.read(buffer, { type: 'array' })
+      const sheetName = workbook.SheetNames[0]
+      const sheet = workbook.Sheets[sheetName]
+      const data = XLSX.utils.sheet_to_json(sheet) as Record<string, unknown>[]
+      
+      const { data: session } = await supabase.auth.getSession()
+      const userName = session.session?.user?.user_metadata?.name ?? 'Usuário'
+
+      let salvos = 0
+      let erros = 0
+
+      for (const row of data) {
+        const produto = String(row['Produto'] || row['produto'] || row['PRODUTO'] || '').trim()
+        const lote = String(row['Lote'] || row['lote'] || row['LOTE'] || '').trim()
+        const dataRetiradaStr = row['Data de Retirada'] || row['data_retirada'] || row['DATA DE RETIRADA'] || ''
+        const dataVencimentoStr = row['Data de Vencimento'] || row['data_vencimento'] || row['DATA DE VENCIMENTO'] || ''
+
+        if (!produto || !lote) {
+          erros++
+          continue
+        }
+
+        let dataRetirada: Date | null = null
+        let dataVencimento: Date | null = null
+
+        if (dataRetiradaStr) {
+          if (typeof dataRetiradaStr === 'number') {
+            dataRetirada = new Date((dataRetiradaStr - 25569) * 86400 * 1000)
+          } else if (typeof dataRetiradaStr === 'string') {
+            dataRetirada = new Date(dataRetiradaStr)
+          }
+        }
+
+        if (dataVencimentoStr) {
+          if (typeof dataVencimentoStr === 'number') {
+            dataVencimento = new Date((dataVencimentoStr - 25569) * 86400 * 1000)
+          } else if (typeof dataVencimentoStr === 'string') {
+            dataVencimento = new Date(dataVencimentoStr)
+          }
+        }
+
+        if (!dataRetirada || !dataVencimento || isNaN(dataRetirada.getTime()) || isNaN(dataVencimento.getTime())) {
+          erros++
+          continue
+        }
+
+        const { error: insertError } = await supabase.from('contraprovas').insert([
+          {
+            produto,
+            lote,
+            data_retirada: dataRetirada.toISOString(),
+            data_vencimento: dataVencimento.toISOString(),
+            criado_por: userName,
+            status: null,
+          },
+        ])
+
+        if (insertError) {
+          console.log('ERRO AO IMPORTAR:', insertError)
+          erros++
+        } else {
+          salvos++
+        }
+      }
+
+      if (salvos > 0) {
+        const { data: refreshData } = await supabase
+          .from('contraprovas')
+          .select('id,produto,lote,data_retirada,data_vencimento,criado_em,criado_por,status')
+          .order('criado_em', { ascending: false })
+
+        setContraprovas(refreshData as ContraprovaRow[] ?? [])
+        aplicarFiltros()
+      }
+
+      showAlert(`Importação concluída: ${salvos} registros salvos, ${erros} erros.`)
+    } catch (err) {
+      console.log('ERRO AO LER EXCEL:', err)
+      showError('Erro ao ler arquivo Excel.')
+    } finally {
+      setImporting(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   if (guardLoading) {
     return (
@@ -409,13 +501,32 @@ export default function ContraprovaPage() {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               <button 
                 className="btn" 
                 onClick={() => setFormPopupOpen(true)}
                 style={{ flex: 1, background: '#28a745', border: 'none', color: 'white' }}
               >
                 Incluir lançamento
+              </button>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleImportarExcel(file)
+                }}
+                style={{ display: 'none' }}
+              />
+              <button 
+                className="btn" 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importing}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <Upload /> {importing ? 'Importando...' : 'Importar Excel'}
               </button>
               <div style={{ position: 'relative', flex: 1 }}>
                 <button 
@@ -643,8 +754,8 @@ export default function ContraprovaPage() {
                 <input
                   className="input"
                   value={lote}
-                  onChange={(e) => setLote(onlyDigits(e.target.value))}
-                  placeholder="Ex: 6000"
+                  onChange={(e) => setLote(e.target.value.toUpperCase().replace(/[^0-9A-Z\/]/g, ''))}
+                  placeholder="Ex: 6000/AB"
                   style={{ marginTop: 8, marginBottom: 12 }}
                 />
                 
