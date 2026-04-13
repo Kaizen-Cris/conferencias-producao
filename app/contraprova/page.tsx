@@ -9,7 +9,7 @@ import { getMyRole } from '../../lib/auth'
 import { sanitizeText } from '../../lib/sanitize'
 import Popup from '../../components/popup'
 import DatePickerInput from '@/components/DatePickerInput'
-import { FaFilter as Filter, FaUpload as Upload } from 'react-icons/fa'
+import { FaFilter as Filter, FaUpload as Upload, FaSync as Sync } from 'react-icons/fa'
 import * as XLSX from 'xlsx'
 
 type ItemRow = {
@@ -127,24 +127,25 @@ export default function ContraprovaPage() {
     setContraprovasFiltradas(filtradas)
   }, [busca, mostrarVencidas, mostrarExcluidos, contraprovas])
 
-  useEffect(() => {
-    async function carregarContraprovas() {
-      if (!role) return
+  async function carregarContraprovas() {
+    if (!role) return
 
-      const { data, error } = await supabase
-        .from('contraprovas')
-        .select('id,produto,lote,data_retirada,data_vencimento,criado_em,criado_por,status')
-        .order('criado_em', { ascending: false })
+    const { data, error } = await supabase
+      .from('contraprovas')
+      .select('id,produto,lote,data_retirada,data_vencimento,criado_em,criado_por,status')
+      .order('data_retirada', { ascending: false })
+      .order('criado_em', { ascending: false })
 
-      if (error) {
-        console.log('ERRO AO CARREGAR CONTRA PROVAS:', error)
-        return
-      }
-
-      setContraprovas(data as ContraprovaRow[] ?? [])
-      aplicarFiltros()
+    if (error) {
+      console.log('ERRO AO CARREGAR CONTRA PROVAS:', error)
+      return
     }
 
+    setContraprovas(data as ContraprovaRow[] ?? [])
+    aplicarFiltros()
+  }
+
+  useEffect(() => {
     carregarContraprovas()
   }, [role, aplicarFiltros])
 
@@ -440,7 +441,7 @@ export default function ContraprovaPage() {
         const { data: refreshData } = await supabase
           .from('contraprovas')
           .select('id,produto,lote,data_retirada,data_vencimento,criado_em,criado_por,status')
-          .order('criado_em', { ascending: false })
+.order('data_retirada', { ascending: false })
 
         setContraprovas(refreshData as ContraprovaRow[] ?? [])
         aplicarFiltros()
@@ -484,8 +485,15 @@ export default function ContraprovaPage() {
 
       <div className="container">
         <div className="card">
-          <div className="hstack" style={{ marginBottom: 12 }}>
+          <div className="hstack" style={{ marginBottom: 12, justifyContent: 'space-between' }}>
             <h1 style={{ margin: 0 }}>Contraprova</h1>
+            <button 
+              className="btn" 
+              onClick={carregarContraprovas}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '8px 12px' }}
+            >
+              <Sync /> Atualizar
+            </button>
           </div>
 
           {/* Busca e ações */}
