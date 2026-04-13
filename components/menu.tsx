@@ -28,6 +28,7 @@ export default function Menu() {
       { label: 'Divergências', path: '/divergencias', roles: ['OPERADOR', 'ADMIN', 'SUPERVISOR'] },
       { label: 'Histórico', path: '/historico', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE', 'SUPERVISOR'] },
       { label: 'Itens', path: '/itens', roles: ['ADMIN', 'SUPERVISOR'] },
+      { label: 'Contraprova', path: '/contraprova', roles: ['CONFERENTE', 'ADMIN'] },
       { label: 'Configuração', path: '/configuracao', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE', 'SUPERVISOR'] },
       { label: 'Usuários', path: '/usuarios', roles: ['ADMIN', 'SUPERVISOR'] },
     ],
