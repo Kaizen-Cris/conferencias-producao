@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
+import { ptBR } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 
 interface DatePickerInputProps {
@@ -133,6 +134,7 @@ export default function DatePickerInput({
               maxDate={maxDate}
               showTimeSelect={false}
               openToDate={viewDate}
+              locale={ptBR}
               inline
             />
           </div>
