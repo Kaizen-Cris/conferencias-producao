@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
 import Popup from '../../components/popup'
 
-type Role = 'ADMIN' | 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR'
+type Role = 'ADMIN' | 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR' | 'QUALIDADE'
 
 type BackupFile = {
   name: string

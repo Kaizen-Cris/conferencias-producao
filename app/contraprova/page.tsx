@@ -65,6 +65,8 @@ export default function ContraprovaPage() {
 
   const itemSelecionado = useMemo(() => itens.find((x) => x.id === itemId) ?? null, [itens, itemId])
   const isAdmin = role === 'ADMIN'
+  const isQualidade = role === 'QUALIDADE'
+  const podeIncluir = !isQualidade
 
   useEffect(() => {
     let mounted = true
@@ -581,6 +583,7 @@ export default function ContraprovaPage() {
             </div>
 
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              {podeIncluir && (
               <button 
                 className="btn" 
                 onClick={() => setFormPopupOpen(true)}
@@ -588,7 +591,9 @@ export default function ContraprovaPage() {
               >
                 Incluir lançamento
               </button>
+            )}
               
+              {podeIncluir && (
               <input
                 ref={fileInputRef}
                 type="file"
@@ -599,6 +604,8 @@ export default function ContraprovaPage() {
                 }}
                 style={{ display: 'none' }}
               />
+            )}
+            {podeIncluir && (
               <button 
                 className="btn" 
                 onClick={() => fileInputRef.current?.click()}
@@ -607,7 +614,8 @@ export default function ContraprovaPage() {
               >
                 <Upload /> {importing ? 'Importando...' : 'Importar Excel'}
               </button>
-              <div style={{ position: 'relative', flex: 1 }}>
+            )}
+            <div style={{ position: 'relative', flex: 1 }}>
                 <button 
                   className="btn" 
                   onClick={() => setFilterMenuOpen(!filterMenuOpen)}
