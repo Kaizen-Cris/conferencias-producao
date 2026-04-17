@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 import { getMyRole, clearRoleCache } from '../lib/auth'
 
 
-type Role = 'ADMIN' | 'CONFERENTE' | 'OPERADOR' | 'SUPERVISOR' | null
+type Role = 'ADMIN' | 'CONFERENTE' | 'OPERADOR' | 'SUPERVISOR' | 'QUALIDADE' | null
 
 type NavItem = {
   label: string
@@ -28,8 +28,9 @@ export default function Menu() {
       { label: 'Divergências', path: '/divergencias', roles: ['OPERADOR', 'ADMIN', 'SUPERVISOR'] },
       { label: 'Histórico', path: '/historico', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE', 'SUPERVISOR'] },
       { label: 'Itens', path: '/itens', roles: ['ADMIN', 'SUPERVISOR'] },
-      { label: 'Contraprova', path: '/contraprova', roles: ['CONFERENTE', 'ADMIN'] },
-      { label: 'Configuração', path: '/configuracao', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE', 'SUPERVISOR'] },
+      { label: 'Contraprova', path: '/contraprova', roles: ['CONFERENTE', 'ADMIN', 'QUALIDADE'] },
+      { label: 'Reclamações', path: '/reclamacoes', roles: ['ADMIN', 'QUALIDADE'] },
+      { label: 'Configuração', path: '/configuracao', roles: ['ADMIN', 'OPERADOR', 'CONFERENTE', 'SUPERVISOR', 'QUALIDADE'] },
       { label: 'Usuários', path: '/usuarios', roles: ['ADMIN', 'SUPERVISOR'] },
     ],
     []
