@@ -85,8 +85,8 @@ export default function ContraprovaPage() {
       const r = await getMyRole()
       if (!mounted) return
 
-      // Only allow CONFERENTE and ADMIN
-      if (r !== 'CONFERENTE' && r !== 'ADMIN') {
+      // Only allow CONFERENTE, ADMIN and QUALIDADE (read-only)
+      if (r !== 'CONFERENTE' && r !== 'ADMIN' && r !== 'QUALIDADE') {
         router.replace('/')
         return
       }
