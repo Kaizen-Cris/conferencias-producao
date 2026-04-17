@@ -9,7 +9,7 @@ import { getMyRole } from '../../lib/auth'
 import { sanitizeText } from '../../lib/sanitize'
 import Popup from '../../components/popup'
 import DatePickerInput from '@/components/DatePickerInput'
-import { FaFilter as Filter, FaUpload as Upload, FaSync as Sync } from 'react-icons/fa'
+import { FaFilter as Filter, FaUpload as Upload, FaSync as Sync, FaPrint as Print } from 'react-icons/fa'
 import * as XLSX from 'xlsx'
 
 type ItemRow = {
@@ -186,6 +186,70 @@ export default function ContraprovaPage() {
     setPopupMessage(message)
     setPopupVariant('alert')
     setPopupOpen(true)
+  }
+
+  function gerarRelatorioValidos() {
+    const agora = new Date()
+    const validos = contraprovas.filter(c => {
+      const isExcluido = (c.status || '').toUpperCase() === 'EXCLUIDO'
+      const isVencido = new Date(c.data_vencimento) < agora
+      return !isExcluido && !isVencido
+    })
+
+    if (validos.length === 0) {
+      showError('Nenhuma contraprova válida para imprimir.')
+      return
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Relatório Contraprovas Válidas</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { text-align: center; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 12px; }
+          th { background: #eee; }
+          .print-date { text-align: center; margin-bottom: 20px; color: #666; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <h1>Contraprovas Válidas</h1>
+        <p class="print-date">Data de geração: ${new Date().toLocaleString()}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Lote</th>
+              <th>Data Retirada</th>
+              <th>Data Vencimento</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${validos.map(c => `
+              <tr>
+                <td>${c.produto}</td>
+                <td>${c.lote}</td>
+                <td>${new Date(c.data_retirada).toLocaleDateString()}</td>
+                <td>${new Date(c.data_vencimento).toLocaleDateString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `
+
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(printContent)
+      printWindow.document.close()
+      printWindow.focus()
+      setTimeout(() => printWindow.print(), 250)
+    }
   }
 
   function showConfirm(message: string, onConfirm: () => void, title = 'Confirmar') {
@@ -487,6 +551,13 @@ export default function ContraprovaPage() {
         <div className="card">
           <div className="hstack" style={{ marginBottom: 12, justifyContent: 'space-between' }}>
             <h1 style={{ margin: 0 }}>Contraprova</h1>
+            <button 
+              className="btn" 
+              onClick={gerarRelatorioValidos}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '8px 12px', background: '#007bff', border: 'none', color: 'white' }}
+            >
+              <Print /> Imprimir válidas
+            </button>
             <button 
               className="btn" 
               onClick={carregarContraprovas}
