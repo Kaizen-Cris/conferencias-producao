@@ -7,7 +7,7 @@ import { getMyRole } from '../../lib/auth'
 import { sanitizeText } from '../../lib/sanitize'
 import Popup from '../../components/popup'
 
-type Role = 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR' | 'ADMIN'
+type Role = 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR' | 'ADMIN' | 'QUALIDADE'
 
 type UiUser = {
   id: string
@@ -326,7 +326,8 @@ export default function UsuariosPage() {
                 <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
                   <option value="OPERADOR">OPERADOR</option>
                   <option value="CONFERENTE">CONFERENTE</option>
-                  <option value="SUPERVISOR">SUPERVISOR</option>
+                  <option value="SUPERVISOR">QUALIDADE</option>
+                  <option value="QUALIDADE">SUPERVISOR</option>
                   {role === 'ADMIN' && <option value="ADMIN">ADMIN</option>}
                 </select>
             </div>
@@ -378,6 +379,7 @@ export default function UsuariosPage() {
                         <option value="OPERADOR">OPERADOR</option>
                         <option value="CONFERENTE">CONFERENTE</option>
                         <option value="SUPERVISOR">SUPERVISOR</option>
+                        <option value="QUALIDADE">QUALIDADE</option>
                         {role === 'ADMIN' && <option value="ADMIN">ADMIN</option>}
                       </select>
                     ) : (

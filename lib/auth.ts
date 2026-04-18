@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-export type Role = 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR' | 'ADMIN' | 'QUALIDADE'
+export type Role = 'OPERADOR' | 'CONFERENTE' | 'SUPERVISOR' | 'ADMIN' | 'QUALIDADE' | 'QUALIDADE'
 
 // ✅ cache simples em memória (evita Menu + Page chamarem toda hora)
 let roleCache: { value: Role | null; userId: string | null; at: number } = {

@@ -10,6 +10,12 @@ import Popup from '../../components/popup'
 import DatePickerInput from '@/components/DatePickerInput'
 import { FaFilter as Filter, FaSync as Sync } from 'react-icons/fa'
 
+type ItemRow = {
+  id: string
+  nome: string
+  qtd_por_caixa: number | null
+}
+
 type ReclamacaoRow = {
   id: string
   produto: string
@@ -45,14 +51,23 @@ export default function ReclamacoesPage() {
   const [editData, setEditData] = useState<ReclamacaoRow | null>(null)
   const [popupAction, setPopupAction] = useState<(() => void) | null>(null)
 
-  const [produto, setProduto] = useState('')
   const [lote, setLote] = useState('')
   const [descricao, setDescricao] = useState('')
   const [codigoRastreio, setCodigoRastreio] = useState('')
   const [status, setStatus] = useState('EM ABERTO')
 
+  const [itens, setItens] = useState<ItemRow[]>([])
+  const [itemId, setItemId] = useState('')
+  const [itemBusca, setItemBusca] = useState('')
+
+  const buscaSanitizada = sanitizeText(itemBusca, { maxLen: 80 }).toLowerCase()
+  const itensFiltrados = itens.filter((x) => x.nome.toLowerCase().includes(buscaSanitizada))
+
+  const itemSelecionado = useMemo(() => itens.find((x) => x.id === itemId) ?? null, [itens, itemId])
+
   const isAdmin = role === 'ADMIN'
   const isQualidade = role === 'QUALIDADE'
+  const canInclude = isAdmin || role !== 'QUALIDADE'
 
   useEffect(() => {
     let mounted = true
@@ -130,6 +145,27 @@ export default function ReclamacoesPage() {
   }, [role, aplicarFiltros])
 
   useEffect(() => {
+    async function carregarItens() {
+      if (!role) return
+
+      const { data, error } = await supabase
+        .from('itens')
+        .select('id,nome,qtd_por_caixa')
+        .eq('ativo', true)
+        .order('nome', { ascending: true })
+
+      if (error) {
+        console.log('ERRO AO CARREGAR ITENS:', error)
+        return
+      }
+
+      setItens(data as ItemRow[] ?? [])
+    }
+
+    carregarItens()
+  }, [role])
+
+  useEffect(() => {
     aplicarFiltros()
   }, [mostrarTodas])
 
@@ -156,9 +192,11 @@ export default function ReclamacoesPage() {
   }
 
   function iniciarEdicao(c: ReclamacaoRow) {
+    const itemEncontrado = itens.find(x => x.nome === c.produto)
     setEditData(c)
     setEditingId(c.id)
-    setProduto(c.produto)
+    setItemId(itemEncontrado?.id || '')
+    setItemBusca(c.produto)
     setLote(c.lote)
     setDescricao(c.descricao)
     setCodigoRastreio(c.codigo_rastreio || '')
@@ -168,11 +206,11 @@ export default function ReclamacoesPage() {
 
   async function handleSalvarEdicao() {
     if (!editData) return
-    
+
     const { error } = await supabase
       .from('reclamacoes')
       .update({
-        produto: produto.trim(),
+        produto: itemSelecionado?.nome || editData.produto,
         lote: lote.trim(),
         descricao: descricao.trim(),
         codigo_rastreio: codigoRastreio.trim() || null,
@@ -189,7 +227,7 @@ export default function ReclamacoesPage() {
       if (c.id === editData.id) {
         return {
           ...c,
-          produto: produto.trim(),
+          produto: itemSelecionado?.nome || editData.produto,
           lote: lote.trim(),
           descricao: descricao.trim(),
           codigo_rastreio: codigoRastreio.trim() || null,
@@ -206,7 +244,8 @@ export default function ReclamacoesPage() {
   function cancelarEdicao() {
     setEditingId(null)
     setEditData(null)
-    setProduto('')
+    setItemId('')
+    setItemBusca('')
     setLote('')
     setDescricao('')
     setCodigoRastreio('')
@@ -225,8 +264,13 @@ export default function ReclamacoesPage() {
       return
     }
 
-    if (!produto.trim()) {
-      showError('Preencha o produto.')
+    if (!itemId) {
+      showError('Selecione um produto.')
+      return
+    }
+
+    if (!itemSelecionado) {
+      showError('Produto inválido. Recarregue a página e tente novamente.')
       return
     }
 
@@ -242,7 +286,7 @@ export default function ReclamacoesPage() {
 
     const { error } = await supabase.from('reclamacoes').insert([
       {
-        produto: produto.trim(),
+        produto: itemSelecionado.nome,
         lote: lote.trim(),
         descricao: descricao.trim(),
         codigo_rastreio: codigoRastreio.trim() || null,
@@ -259,7 +303,8 @@ export default function ReclamacoesPage() {
 
     showAlert('Reclamação salva com sucesso!', 'Sucesso')
 
-    setProduto('')
+    setItemId('')
+    setItemBusca('')
     setLote('')
     setDescricao('')
     setCodigoRastreio('')
@@ -279,7 +324,7 @@ export default function ReclamacoesPage() {
   function getStatusColor(status: string) {
     switch (status) {
       case 'EM ABERTO': return '#dc3545'
-      case 'EM PROCESSO': return '#ffc107'
+      case 'EM ANÁLISE': return '#ffc107'
       case 'ENVIADA': return '#17a2b8'
       case 'ENTREGUE': return '#28a745'
       default: return '#6c757d'
@@ -338,6 +383,7 @@ export default function ReclamacoesPage() {
             </div>
 
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              {canInclude && (
               <button 
                 className="btn" 
                 onClick={() => setFormPopupOpen(true)}
@@ -345,6 +391,7 @@ export default function ReclamacoesPage() {
               >
                 Nova reclamação
               </button>
+              )}
               
               <div style={{ position: 'relative', flex: 1 }}>
                 <button 
@@ -408,7 +455,7 @@ export default function ReclamacoesPage() {
                       <div style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
                         <b>Lote:</b> {c.lote}
                       </div>
-                      <div style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
+                      <div style={{ fontSize: 14, color: '#666', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         <b>Descrição:</b> {c.descricao}
                       </div>
                       {c.codigo_rastreio && (
@@ -452,7 +499,7 @@ export default function ReclamacoesPage() {
                         <tr key={c.id} style={{ borderBottom: '1px solid #dee2e6' }}>
                           <td style={{ padding: '8px' }}>{c.produto}</td>
                           <td style={{ padding: '8px' }}>{c.lote}</td>
-                          <td style={{ padding: '8px' }}>{c.descricao}</td>
+                          <td style={{ padding: '8px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.descricao}>{c.descricao}</td>
                           <td style={{ padding: '8px' }}>{c.codigo_rastreio || '-'}</td>
                           <td style={{ padding: '8px' }}>
                             <span style={{ color: getStatusColor(c.status), fontWeight: 'bold' }}>{c.status}</span>
@@ -483,25 +530,39 @@ export default function ReclamacoesPage() {
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: formPopupOpen ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
             <div style={{ background: 'white', padding: '24px', borderRadius: '8px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
               <h2 style={{ marginTop: 0 }}>{editingId ? 'Editar reclamação' : 'Nova reclamação'}</h2>
-              
+
               <label>Produto</label>
               <input
                 className="input"
-                value={produto}
-                onChange={(e) => setProduto(e.target.value)}
-                placeholder="Nome do produto"
-                style={{ marginTop: 8, marginBottom: 12 }}
+                value={itemBusca}
+                onChange={(e) => setItemBusca(e.target.value)}
+                placeholder="Buscar produto..."
+                style={{ marginTop: 8 }}
                 disabled={!!editingId}
               />
-              
+
+              <select
+                className="select"
+                value={itemId}
+                onChange={(e) => setItemId(e.target.value)}
+                style={{ width: '100%', marginTop: 8, marginBottom: 12 }}
+                disabled={!!editingId}
+              >
+                <option value="">Selecione um produto</option>
+                {itensFiltrados.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.nome}
+                  </option>
+                ))}
+              </select>
+
               <label>Lote</label>
               <input
                 className="input"
                 value={lote}
-                onChange={(e) => setLote(e.target.value.toUpperCase())}
-                placeholder="Lote"
+                onChange={(e) => setLote(e.target.value.toUpperCase().replace(/[^0-9A-Z\/]/g, ''))}
+                placeholder="Ex: 6000/AB"
                 style={{ marginTop: 8, marginBottom: 12 }}
-                disabled={!!editingId}
               />
               
               <label>Descrição</label>
@@ -511,7 +572,6 @@ export default function ReclamacoesPage() {
                 onChange={(e) => setDescricao(e.target.value)}
                 placeholder="Descrição da reclamação"
                 style={{ marginTop: 8, marginBottom: 12, minHeight: '80px' }}
-                disabled={!!editingId}
               />
               
               <label>Código de Rastreio (opcional)</label>
