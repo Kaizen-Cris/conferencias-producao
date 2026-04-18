@@ -27,7 +27,7 @@ type ReclamacaoRow = {
   criado_por: string
 }
 
-const STATUS_OPTIONS = ['EM ABERTO', 'EM PROCESSO', 'ENVIADA', 'ENTREGUE']
+const STATUS_OPTIONS = ['EM ABERTO', 'EM ANÁLISE', 'ENVIADA', 'ENTREGUE']
 
 export default function ReclamacoesPage() {
   const router = useRouter()
