@@ -378,8 +378,8 @@ export default function UsuariosPage() {
                       >
                         <option value="OPERADOR">OPERADOR</option>
                         <option value="CONFERENTE">CONFERENTE</option>
-                        <option value="SUPERVISOR">SUPERVISOR</option>
                         <option value="QUALIDADE">QUALIDADE</option>
+                        <option value="SUPERVISOR">SUPERVISOR</option>
                         {role === 'ADMIN' && <option value="ADMIN">ADMIN</option>}
                       </select>
                     ) : (
