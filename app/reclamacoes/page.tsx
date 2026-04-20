@@ -26,7 +26,7 @@ type ReclamacaoRow = {
   criado_por: string
 }
 
-const STATUS_OPTIONS = ['EM ABERTO', 'EM ANÁLISE', 'ENVIADA', 'ENTREGUE']
+const STATUS_OPTIONS = ['EM ANÁLISE', 'A ENVIAR', 'ENVIADA', 'ENTREGUE']
 
 export default function ReclamacoesPage() {
   const router = useRouter()
@@ -53,7 +53,7 @@ export default function ReclamacoesPage() {
   const [lote, setLote] = useState('')
   const [descricao, setDescricao] = useState('')
   const [codigoRastreio, setCodigoRastreio] = useState('')
-  const [status, setStatus] = useState('EM ABERTO')
+  const [status, setStatus] = useState('EM ANÁLISE')
 
   const [itens, setItens] = useState<ItemRow[]>([])
   const [itemId, setItemId] = useState('')
@@ -269,7 +269,7 @@ export default function ReclamacoesPage() {
     setLote('')
     setDescricao('')
     setCodigoRastreio('')
-    setStatus('EM ABERTO')
+    setStatus('EEM ANÁLISE')
     setFormPopupOpen(false)
   }
 
@@ -328,7 +328,7 @@ export default function ReclamacoesPage() {
     setLote('')
     setDescricao('')
     setCodigoRastreio('')
-    setStatus('EM ABERTO')
+    setStatus('EM ANÁLISE')
 
     const { data: refreshData, error: refreshError } = await supabase
       .from('reclamacoes')
@@ -343,8 +343,8 @@ export default function ReclamacoesPage() {
 
   function getStatusColor(status: string) {
     switch (status) {
-      case 'EM ABERTO': return '#dc3545'
-      case 'EM ANÁLISE': return '#ffc107'
+      case 'EM ANÁLISE': return '#dc3545'
+      case 'A ENVIAR': return '#ffc107'
       case 'ENVIADA': return '#17a2b8'
       case 'ENTREGUE': return '#28a745'
       default: return '#6c757d'
