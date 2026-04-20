@@ -326,8 +326,8 @@ export default function UsuariosPage() {
                 <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
                   <option value="OPERADOR">OPERADOR</option>
                   <option value="CONFERENTE">CONFERENTE</option>
-                  <option value="SUPERVISOR">QUALIDADE</option>
-                  <option value="QUALIDADE">SUPERVISOR</option>
+                  <option value="QUALIDADE">QUALIDADE</option>
+                  <option value="SUPERVISOR">SUPERVISOR</option>
                   {role === 'ADMIN' && <option value="ADMIN">ADMIN</option>}
                 </select>
             </div>
