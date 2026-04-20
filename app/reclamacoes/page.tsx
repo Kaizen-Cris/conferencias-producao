@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import Menu from '../../components/menu'
 import { useRouter } from 'next/navigation'
 import { getMyRole } from '../../lib/auth'
 import { sanitizeText } from '../../lib/sanitize'
 import Popup from '../../components/popup'
-import DatePickerInput from '@/components/DatePickerInput'
 import { FaFilter as Filter, FaSync as Sync } from 'react-icons/fa'
 
 type ItemRow = {
@@ -39,6 +38,7 @@ export default function ReclamacoesPage() {
   const [reclamacoesFiltradas, setReclamacoesFiltradas] = useState<ReclamacaoRow[]>([])
   const [busca, setBusca] = useState('')
   const [mostrarTodas, setMostrarTodas] = useState(false)
+  const [mostrarExcluidos, setMostrarExcluidos] = useState(false)
   const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 
   const [popupOpen, setPopupOpen] = useState(false)
@@ -46,7 +46,6 @@ export default function ReclamacoesPage() {
   const [popupMessage, setPopupMessage] = useState('')
   const [popupVariant, setPopupVariant] = useState<'success' | 'alert' | 'warning' | 'confirm'>('warning')
   const [formPopupOpen, setFormPopupOpen] = useState(false)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editData, setEditData] = useState<ReclamacaoRow | null>(null)
   const [popupAction, setPopupAction] = useState<(() => void) | null>(null)
@@ -120,8 +119,12 @@ export default function ReclamacoesPage() {
       filtradas = filtradas.filter(c => c.status !== 'ENTREGUE')
     }
 
+    if (!mostrarExcluidos) {
+      filtradas = filtradas.filter(c => c.status !== 'EXCLUIDO')
+    }
+
     setReclamacoesFiltradas(filtradas)
-  }, [busca, mostrarTodas, reclamacoes])
+  }, [busca, mostrarTodas, mostrarExcluidos, reclamacoes])
 
   async function carregarReclamacoes() {
     if (!role) return
@@ -167,7 +170,7 @@ export default function ReclamacoesPage() {
 
   useEffect(() => {
     aplicarFiltros()
-  }, [mostrarTodas])
+  }, [mostrarTodas, mostrarExcluidos])
 
   function showAlert(message: string, title = 'Sucesso') {
     setPopupTitle(title)
@@ -189,6 +192,23 @@ export default function ReclamacoesPage() {
     setPopupVariant('confirm')
     setPopupAction(() => onConfirm)
     setPopupOpen(true)
+  }
+
+  async function excluirReclamacao(id: string) {
+    if (!role || (role !== 'ADMIN' && role !== 'QUALIDADE')) {
+      showError('Apenas administradores e qualidade podem excluir registros.')
+      return
+    }
+    const { error } = await supabase
+      .from('reclamacoes')
+      .update({ status: 'EXCLUIDO' })
+      .eq('id', id)
+    if (error) {
+      showError('Não foi possível excluir. Verifique suas permissões.')
+      return
+    }
+    setReclamacoes(prev => prev.map(c => c.id === id ? { ...c, status: 'EXCLUIDO' } : c))
+    aplicarFiltros()
   }
 
   function iniciarEdicao(c: ReclamacaoRow) {
@@ -415,13 +435,21 @@ export default function ReclamacoesPage() {
                     zIndex: 100,
                     marginTop: 4,
                   }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
                       <input
                         type="checkbox"
                         checked={mostrarTodas}
                         onChange={(e) => setMostrarTodas(e.target.checked)}
                       />
                       Mostrar entregues
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={mostrarExcluidos}
+                        onChange={(e) => setMostrarExcluidos(e.target.checked)}
+                      />
+                      Mostrar excluídos
                     </label>
                   </div>
                 )}
@@ -468,13 +496,22 @@ export default function ReclamacoesPage() {
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         {(isAdmin || isQualidade) && (
-                          <button 
-                            className="btn" 
-                            onClick={() => iniciarEdicao(c)}
-                            style={{ flex: 1 }}
-                          >
-                            Editar status
-                          </button>
+                          <>
+                            <button 
+                              className="btn" 
+                              onClick={() => iniciarEdicao(c)}
+                              style={{ flex: 1 }}
+                            >
+                              Editar status
+                            </button>
+                            <button 
+                              className="btn" 
+                              onClick={() => showConfirm('Tem certeza que deseja excluir?', () => excluirReclamacao(c.id))}
+                              style={{ flex: 1, background: '#dc3545', border: 'none', color: 'white' }}
+                            >
+                              Excluir
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -508,13 +545,22 @@ export default function ReclamacoesPage() {
                           <td style={{ padding: '8px' }}>
                             <div style={{ display: 'flex', gap: 8 }}>
                               {(isAdmin || isQualidade) && (
-                                <button 
-                                  className="btn" 
-                                  onClick={() => iniciarEdicao(c)}
-                                  style={{ padding: '4px 8px', fontSize: 12 }}
-                                >
-                                  Editar
-                                </button>
+                                <>
+                                  <button 
+                                    className="btn" 
+                                    onClick={() => iniciarEdicao(c)}
+                                    style={{ padding: '4px 8px', fontSize: 12 }}
+                                  >
+                                    Editar
+                                  </button>
+                                  <button 
+                                    className="btn" 
+                                    onClick={() => showConfirm('Tem certeza que deseja excluir?', () => excluirReclamacao(c.id))}
+                                    style={{ padding: '4px 8px', fontSize: 12, background: '#dc3545', border: 'none', color: 'white' }}
+                                  >
+                                    Excluir
+                                  </button>
+                                </>
                               )}
                             </div>
                           </td>
