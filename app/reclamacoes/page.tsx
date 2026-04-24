@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase'
 import Menu from '../../components/menu'
 import { useRouter } from 'next/navigation'
 import { getMyRole } from '../../lib/auth'
-import { sanitizeText } from '../../lib/sanitize'
+import { sanitizeText, removeAccents } from '../../lib/sanitize'
 import Popup from '../../components/popup'
 import { FaFilter as Filter, FaSync as Sync } from 'react-icons/fa'
 
@@ -17,6 +17,7 @@ type ItemRow = {
 
 type ReclamacaoRow = {
   id: string
+  cliente: string
   produto: string
   lote: string
   descricao: string
@@ -34,8 +35,7 @@ export default function ReclamacoesPage() {
   const [role, setRole] = useState<string | null>(null)
   const [guardLoading, setGuardLoading] = useState(true)
 
-  const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
-  const [reclamacoesFiltradas, setReclamacoesFiltradas] = useState<ReclamacaoRow[]>([])
+const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
   const [busca, setBusca] = useState('')
   const [mostrarPendentes, setMostrarPendentes] = useState(true)
   const [mostrarEnviados, setMostrarEnviados] = useState(false)
@@ -51,6 +51,7 @@ export default function ReclamacoesPage() {
   const [editData, setEditData] = useState<ReclamacaoRow | null>(null)
   const [popupAction, setPopupAction] = useState<(() => void) | null>(null)
 
+  const [cliente, setCliente] = useState('')
   const [lote, setLote] = useState('')
   const [descricao, setDescricao] = useState('')
   const [codigoRastreio, setCodigoRastreio] = useState('')
@@ -103,36 +104,31 @@ export default function ReclamacoesPage() {
     }
   }, [router])
 
-  const aplicarFiltros = useCallback(() => {
-    let filtradas = [...reclamacoes]
+  const reclamacoesFiltradas = useMemo(() => {
+    let resultado = reclamacoes
+
+    if (mostrarPendentes) {
+      resultado = resultado.filter(c => c.status === 'EM ANÁLISE' || c.status === 'A ENVIAR')
+    } else if (mostrarEnviados) {
+      resultado = resultado.filter(c => c.status === 'ENVIADA' || c.status === 'ENTREGUE')
+    } else if (mostrarExcluidos) {
+      resultado = resultado.filter(c => c.status === 'EXCLUIDO')
+    } else {
+      resultado = []
+    }
 
     if (busca.trim()) {
-      const buscaSanitizada = sanitizeText(busca, { maxLen: 80 }).toLowerCase()
-      filtradas = filtradas.filter(c => 
-        c.produto.toLowerCase().includes(buscaSanitizada) ||
-        c.lote.toLowerCase().includes(buscaSanitizada) ||
-        c.descricao.toLowerCase().includes(buscaSanitizada) ||
-        (c.codigo_rastreio || '').toLowerCase().includes(buscaSanitizada)
+      const buscaSemAcento = removeAccents(sanitizeText(busca, { maxLen: 80 })).toLowerCase()
+      resultado = resultado.filter(c => 
+        removeAccents(c.cliente || '').toLowerCase().includes(buscaSemAcento) ||
+        removeAccents(c.produto).toLowerCase().includes(buscaSemAcento) ||
+        removeAccents(c.lote).toLowerCase().includes(buscaSemAcento) ||
+        removeAccents(c.descricao).toLowerCase().includes(buscaSemAcento) ||
+        removeAccents(c.codigo_rastreio || '').toLowerCase().includes(buscaSemAcento)
       )
     }
 
-    if (mostrarPendentes) {
-      filtradas = filtradas.filter(c => c.status === 'EM ANÁLISE' || c.status === 'A ENVIAR')
-    }
-
-    if (mostrarEnviados) {
-      filtradas = filtradas.filter(c => c.status === 'ENVIADA' || c.status === 'ENTREGUE')
-    }
-
-    if (mostrarExcluidos) {
-      filtradas = filtradas.filter(c => c.status === 'EXCLUIDO')
-    }
-
-    if (!mostrarPendentes && !mostrarEnviados && !mostrarExcluidos) {
-      filtradas = []
-    }
-
-    setReclamacoesFiltradas(filtradas)
+    return resultado
   }, [busca, mostrarPendentes, mostrarEnviados, mostrarExcluidos, reclamacoes])
 
   async function carregarReclamacoes() {
@@ -140,7 +136,7 @@ export default function ReclamacoesPage() {
 
     const { data, error } = await supabase
       .from('reclamacoes')
-      .select('id,produto,lote,descricao,codigo_rastreio,status,criado_em,criado_por')
+      .select('id,cliente,produto,lote,descricao,codigo_rastreio,status,criado_em,criado_por')
       .order('criado_em', { ascending: false })
 
     if (error) {
@@ -149,12 +145,11 @@ export default function ReclamacoesPage() {
     }
 
     setReclamacoes(data as ReclamacaoRow[] ?? [])
-    aplicarFiltros()
   }
 
   useEffect(() => {
     carregarReclamacoes()
-  }, [role, aplicarFiltros])
+  }, [role])
 
   useEffect(() => {
     async function carregarItens() {
@@ -176,10 +171,6 @@ export default function ReclamacoesPage() {
 
     carregarItens()
   }, [role])
-
-  useEffect(() => {
-    aplicarFiltros()
-  }, [mostrarPendentes, mostrarEnviados, mostrarExcluidos])
 
   function showAlert(message: string, title = 'Sucesso') {
     setPopupTitle(title)
@@ -224,6 +215,7 @@ export default function ReclamacoesPage() {
     const itemEncontrado = itens.find(x => x.nome === c.produto)
     setEditData(c)
     setEditingId(c.id)
+    setCliente(c.cliente)
     setItemId(itemEncontrado?.id || '')
     setItemBusca(c.produto)
     setLote(c.lote)
@@ -239,6 +231,7 @@ export default function ReclamacoesPage() {
     const { error } = await supabase
       .from('reclamacoes')
       .update({
+        cliente: cliente.trim(),
         produto: itemSelecionado?.nome || editData.produto,
         lote: lote.trim(),
         descricao: descricao.trim(),
@@ -256,6 +249,7 @@ export default function ReclamacoesPage() {
       if (c.id === editData.id) {
         return {
           ...c,
+          cliente: cliente.trim(),
           produto: itemSelecionado?.nome || editData.produto,
           lote: lote.trim(),
           descricao: descricao.trim(),
@@ -273,12 +267,13 @@ export default function ReclamacoesPage() {
   function cancelarEdicao() {
     setEditingId(null)
     setEditData(null)
+    setCliente('')
     setItemId('')
     setItemBusca('')
     setLote('')
     setDescricao('')
     setCodigoRastreio('')
-    setStatus('EEM ANÁLISE')
+    setStatus('EM ANÁLISE')
     setFormPopupOpen(false)
   }
 
@@ -290,6 +285,11 @@ export default function ReclamacoesPage() {
     if (!userId) {
       showError('Você precisa estar logado.')
       router.replace('/')
+      return
+    }
+
+    if (!cliente.trim()) {
+      showError('Preencha o cliente.')
       return
     }
 
@@ -315,6 +315,7 @@ export default function ReclamacoesPage() {
 
     const { error } = await supabase.from('reclamacoes').insert([
       {
+        cliente: cliente.trim(),
         produto: itemSelecionado.nome,
         lote: lote.trim(),
         descricao: descricao.trim(),
@@ -332,6 +333,7 @@ export default function ReclamacoesPage() {
 
     showAlert('Reclamação salva com sucesso!', 'Sucesso')
 
+    setCliente('')
     setItemId('')
     setItemBusca('')
     setLote('')
@@ -341,7 +343,7 @@ export default function ReclamacoesPage() {
 
     const { data: refreshData, error: refreshError } = await supabase
       .from('reclamacoes')
-      .select('id,produto,lote,descricao,codigo_rastreio,status,criado_em,criado_por')
+      .select('id,cliente,produto,lote,descricao,codigo_rastreio,status,criado_em,criado_por')
       .order('criado_em', { ascending: false })
 
     if (!refreshError) {
@@ -488,7 +490,7 @@ export default function ReclamacoesPage() {
                       style={{ marginBottom: 12 }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <div style={{ fontWeight: 700, fontSize: 16 }}>{c.produto}</div>
+                        <div style={{ fontWeight: 700, fontSize: 16 }}>{c.cliente}</div>
                         <div style={{ 
                           fontSize: 12, 
                           fontWeight: 'bold',
@@ -498,17 +500,12 @@ export default function ReclamacoesPage() {
                         </div>
                       </div>
                       <div style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
+                        <b>Produto:</b> {c.produto}
+                      </div>
+                      <div style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
                         <b>Lote:</b> {c.lote}
                       </div>
-                      <div style={{ fontSize: 14, color: '#666', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <b>Descrição:</b> {c.descricao}
-                      </div>
-                      {c.codigo_rastreio && (
-                        <div style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
-                          <b>Rastreio:</b> {c.codigo_rastreio}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>
+                      <div style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
                         <b>Criado em:</b> {new Date(c.criado_em).toLocaleString()}
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
@@ -539,10 +536,9 @@ export default function ReclamacoesPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
+                        <th style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #dee2e6' }}>Cliente</th>
                         <th style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #dee2e6' }}>Produto</th>
                         <th style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #dee2e6' }}>Lote</th>
-                        <th style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #dee2e6' }}>Descrição</th>
-                        <th style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #dee2e6' }}>Rastreio</th>
                         <th style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #dee2e6' }}>Status</th>
                         <th style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #dee2e6' }}>Criado em</th>
                         <th style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #dee2e6' }}>Ações</th>
@@ -551,10 +547,9 @@ export default function ReclamacoesPage() {
                     <tbody>
                       {reclamacoesFiltradas.map((c) => (
                         <tr key={c.id} style={{ borderBottom: '1px solid #dee2e6' }}>
+                          <td style={{ padding: '8px' }}>{c.cliente}</td>
                           <td style={{ padding: '8px' }}>{c.produto}</td>
                           <td style={{ padding: '8px' }}>{c.lote}</td>
-                          <td style={{ padding: '8px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.descricao}>{c.descricao}</td>
-                          <td style={{ padding: '8px' }}>{c.codigo_rastreio || '-'}</td>
                           <td style={{ padding: '8px' }}>
                             <span style={{ color: getStatusColor(c.status), fontWeight: 'bold' }}>{c.status}</span>
                           </td>
@@ -593,6 +588,15 @@ export default function ReclamacoesPage() {
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: formPopupOpen ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
             <div style={{ background: 'white', padding: '24px', borderRadius: '8px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
               <h2 style={{ marginTop: 0 }}>{editingId ? 'Editar reclamação' : 'Nova reclamação'}</h2>
+
+              <label>Cliente</label>
+              <input
+                className="input"
+                value={cliente}
+                onChange={(e) => setCliente(e.target.value)}
+                placeholder="Nome do cliente"
+                style={{ marginTop: 8, marginBottom: 12 }}
+              />
 
               <label>Produto</label>
               <input
