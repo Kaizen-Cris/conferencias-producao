@@ -436,36 +436,42 @@ const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
                     left: 0, 
                     right: 0, 
                     background: 'white', 
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    padding: '12px',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    padding: '16px',
                     zIndex: 100,
-                    marginTop: 4,
+                    marginTop: 8,
                   }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 12, color: '#333', fontSize: 14, borderBottom: '1px solid #eee', paddingBottom: 8 }}>
+                      Filtrar por status
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 12, padding: '8px 12px', borderRadius: 6, background: mostrarPendentes ? '#f8f9fa' : 'transparent', transition: 'background 0.2s' }}>
                       <input
                         type="checkbox"
                         checked={mostrarPendentes}
                         onChange={(e) => setMostrarPendentes(e.target.checked)}
+                        style={{ width: 18, height: 18, accentColor: '#28a745' }}
                       />
-                      Pendentes
+                      <span style={{ fontWeight: 500, color: '#495057' }}>Pendentes</span>
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 12, padding: '8px 12px', borderRadius: 6, background: mostrarEnviados ? '#f8f9fa' : 'transparent', transition: 'background 0.2s' }}>
                       <input
                         type="checkbox"
                         checked={mostrarEnviados}
                         onChange={(e) => setMostrarEnviados(e.target.checked)}
+                        style={{ width: 18, height: 18, accentColor: '#17a2b8' }}
                       />
-                      Enviados
+                      <span style={{ fontWeight: 500, color: '#495057' }}>Enviados</span>
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 12px', borderRadius: 6, background: mostrarExcluidos ? '#f8f9fa' : 'transparent', transition: 'background 0.2s' }}>
                       <input
                         type="checkbox"
                         checked={mostrarExcluidos}
                         onChange={(e) => setMostrarExcluidos(e.target.checked)}
+                        style={{ width: 18, height: 18, accentColor: '#dc3545' }}
                       />
-                      Excluídos
+                      <span style={{ fontWeight: 500, color: '#495057' }}>Excluídos</span>
                     </label>
                   </div>
                 )}

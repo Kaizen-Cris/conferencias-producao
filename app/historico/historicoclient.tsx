@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
+import { removeAccents } from '../../lib/sanitize'
 import Menu from '../../components/menu'
 import StatusBadge from '../../components/statusbadge'
 import Popup from '../../components/popup'
@@ -76,14 +77,19 @@ export default function HistoricoClient() {
       rows = rows.filter((m) => (m.status || '').toUpperCase() !== 'EXCLUIDO')
     }
 
-    if (busca.trim()) {
-      const b = busca.trim().toLowerCase()
-      rows = rows.filter((m) => `${m.item} ${m.lote}`.toLowerCase().includes(b))
-    }
-
     setLista(rows)
     setLoading(false)
   }
+
+  const listaFiltrada = useMemo(() => {
+    if (!busca.trim()) return lista
+
+    const buscaSemAcento = removeAccents(busca.trim()).toLowerCase()
+    return lista.filter((m) => 
+      removeAccents(m.item).toLowerCase().includes(buscaSemAcento) ||
+      removeAccents(m.lote).toLowerCase().includes(buscaSemAcento)
+    )
+  }, [busca, lista])
 
   function showAlert(message: string, title = 'Alerta') {
     setPopupTitle(title)
@@ -241,8 +247,6 @@ export default function HistoricoClient() {
               placeholder="Buscar por item ou lote"
               style={{ flex: 1 }}
             />
-
-            <button className="btn" onClick={carregar}>Buscar</button>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
@@ -269,12 +273,12 @@ export default function HistoricoClient() {
 
           {loading && <p>Carregando...</p>}
 
-          {!loading && lista.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum registro.</p>}
+          {!loading && listaFiltrada.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum registro.</p>}
 
-          {!loading && lista.length > 0 && (
+          {!loading && listaFiltrada.length > 0 && (
             <>
               <div className="show-mobile">
-                {lista.map((m) => (
+                {listaFiltrada.map((m) => (
                   <div
                     key={m.id}
                     className="list-item"
@@ -342,7 +346,7 @@ export default function HistoricoClient() {
                     </tr>
                   </thead>
                   <tbody>
-                    {lista.map((m) => (
+                    {listaFiltrada.map((m) => (
                       <tr
                         key={m.id}
                         className="row-clickable"
