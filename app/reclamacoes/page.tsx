@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import Menu from '../../components/menu'
 import { useRouter } from 'next/navigation'
@@ -208,7 +208,6 @@ const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
       return
     }
     setReclamacoes(prev => prev.map(c => c.id === id ? { ...c, status: 'EXCLUIDO' } : c))
-    aplicarFiltros()
   }
 
   function iniciarEdicao(c: ReclamacaoRow) {
@@ -259,7 +258,6 @@ const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
       }
       return c
     }))
-    aplicarFiltros()
     cancelarEdicao()
     showAlert('Reclamação atualizada com sucesso!')
   }
@@ -348,7 +346,6 @@ const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
 
     if (!refreshError) {
       setReclamacoes(refreshData as ReclamacaoRow[] ?? [])
-      aplicarFiltros()
     }
   }
 
