@@ -37,7 +37,8 @@ export default function ReclamacoesPage() {
   const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
   const [reclamacoesFiltradas, setReclamacoesFiltradas] = useState<ReclamacaoRow[]>([])
   const [busca, setBusca] = useState('')
-  const [mostrarTodas, setMostrarTodas] = useState(false)
+  const [mostrarPendentes, setMostrarPendentes] = useState(true)
+  const [mostrarEnviados, setMostrarEnviados] = useState(false)
   const [mostrarExcluidos, setMostrarExcluidos] = useState(false)
   const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 
@@ -66,7 +67,7 @@ export default function ReclamacoesPage() {
 
   const isAdmin = role === 'ADMIN'
   const isQualidade = role === 'QUALIDADE'
-  const canInclude = isAdmin || role !== 'QUALIDADE'
+  const canInclude = isAdmin || isQualidade
 
   useEffect(() => {
     let mounted = true
@@ -115,16 +116,24 @@ export default function ReclamacoesPage() {
       )
     }
 
-    if (!mostrarTodas) {
-      filtradas = filtradas.filter(c => c.status !== 'ENTREGUE')
+    if (mostrarPendentes) {
+      filtradas = filtradas.filter(c => c.status === 'EM ANÁLISE' || c.status === 'A ENVIAR')
     }
 
-    if (!mostrarExcluidos) {
-      filtradas = filtradas.filter(c => c.status !== 'EXCLUIDO')
+    if (mostrarEnviados) {
+      filtradas = filtradas.filter(c => c.status === 'ENVIADA' || c.status === 'ENTREGUE')
+    }
+
+    if (mostrarExcluidos) {
+      filtradas = filtradas.filter(c => c.status === 'EXCLUIDO')
+    }
+
+    if (!mostrarPendentes && !mostrarEnviados && !mostrarExcluidos) {
+      filtradas = []
     }
 
     setReclamacoesFiltradas(filtradas)
-  }, [busca, mostrarTodas, mostrarExcluidos, reclamacoes])
+  }, [busca, mostrarPendentes, mostrarEnviados, mostrarExcluidos, reclamacoes])
 
   async function carregarReclamacoes() {
     if (!role) return
@@ -170,7 +179,7 @@ export default function ReclamacoesPage() {
 
   useEffect(() => {
     aplicarFiltros()
-  }, [mostrarTodas, mostrarExcluidos])
+  }, [mostrarPendentes, mostrarEnviados, mostrarExcluidos])
 
   function showAlert(message: string, title = 'Sucesso') {
     setPopupTitle(title)
@@ -438,10 +447,18 @@ export default function ReclamacoesPage() {
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
                       <input
                         type="checkbox"
-                        checked={mostrarTodas}
-                        onChange={(e) => setMostrarTodas(e.target.checked)}
+                        checked={mostrarPendentes}
+                        onChange={(e) => setMostrarPendentes(e.target.checked)}
                       />
-                      Mostrar entregues
+                      Pendentes
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={mostrarEnviados}
+                        onChange={(e) => setMostrarEnviados(e.target.checked)}
+                      />
+                      Enviados
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                       <input
@@ -449,7 +466,7 @@ export default function ReclamacoesPage() {
                         checked={mostrarExcluidos}
                         onChange={(e) => setMostrarExcluidos(e.target.checked)}
                       />
-                      Mostrar excluídos
+                      Excluídos
                     </label>
                   </div>
                 )}
