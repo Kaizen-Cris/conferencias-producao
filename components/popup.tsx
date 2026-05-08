@@ -68,12 +68,12 @@ export default function Popup({
 
   const helperText =
     variant === 'success'
-      ? 'Operacao concluida'
+      ? 'Operação concluida'
       : variant === 'alert'
-        ? 'Atencao necessaria'
+        ? 'Atenção necessaria'
         : variant === 'confirm'
           ? 'Confirme para continuar'
-          : 'Verifique esta informacao'
+          : 'Verifique esta informação'
 
   return (
     <div

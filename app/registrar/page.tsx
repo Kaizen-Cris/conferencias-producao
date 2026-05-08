@@ -32,6 +32,7 @@ export default function RegistrarPage() {
   const [popupTitle, setPopupTitle] = useState('Sucesso')
   const [popupMessage, setPopupMessage] = useState('')
   const [popupVariant, setPopupVariant] = useState<'success' | 'alert' | 'warning' | 'confirm'>('warning')
+  const [isSaving, setIsSaving] = useState(false)
 
   const itemSelecionado = useMemo(() => itens.find((x) => x.id === itemId) ?? null, [itens, itemId])
   const qtdPorCaixa = useMemo(() => {
@@ -40,11 +41,18 @@ export default function RegistrarPage() {
     return Number.isFinite(qtdPadrao) && qtdPadrao > 0 ? String(qtdPadrao) : ''
   }, [itemSelecionado])
 
-  function showAlert(message: string, title = 'Sucesso') {
-    setPopupTitle(title)
-    setPopupMessage(message)
-    setPopupVariant('success')
-    setPopupOpen(true)
+  function showAlert(message: string, title = 'Alerta') {
+  setPopupTitle(title)
+  setPopupMessage(message)
+  setPopupVariant('alert')
+  setPopupOpen(true)
+  }
+
+  function showSucess(message: string, title = 'Sucesso') {
+  setPopupTitle(title)
+  setPopupMessage(message)
+  setPopupVariant('success')
+  setPopupOpen(true)
   }
 
   const totalUnidades = useMemo(() => {
@@ -113,38 +121,48 @@ export default function RegistrarPage() {
   }, [role])
 
   async function handleSalvarMovimentacao() {
+    if (isSaving) return
+
+    setIsSaving(true)
+
     const { data: sessionData } = await supabase.auth.getSession()
     const userId = sessionData.session?.user?.id
 
     if (!userId) {
       showAlert('Você precisa estar logado.')
       router.replace('/')
+      setIsSaving(false)
       return
     }
 
     if (!itemId) {
       showAlert('Selecione um item.')
+      setIsSaving(false)
       return
     }
 
     if (!itemSelecionado) {
       showAlert('Item inválido. Recarregue a página e tente novamente.')
+      setIsSaving(false)
       return
     }
 
     const qtdPadrao = Number(itemSelecionado.qtd_por_caixa)
     if (!Number.isFinite(qtdPadrao) || qtdPadrao <= 0) {
       showAlert('Este item está sem quantidade por caixa cadastrada. Atualize o item antes de registrar.')
+      setIsSaving(false)
       return
     }
 
     if (!lote.trim()) {
       showAlert('Preencha o lote.')
+      setIsSaving(false)
       return
     }
 
     if (totalUnidades <= 0) {
       showAlert('Informe caixas e quantidade por caixa (e/ou unidades avulsas). O total deve ser maior que zero.')
+      setIsSaving(false)
       return
     }
 
@@ -167,16 +185,18 @@ export default function RegistrarPage() {
     if (error) {
       console.log('INSERT ERROR:', error)
       showAlert('Erro ao salvar movimentação. Veja o console.')
+      setIsSaving(false)
       return
     }
 
-    showAlert('Movimentação salva com sucesso!', 'Sucesso')
+    showSucess('Movimentação salva com sucesso!', 'Sucesso')
 
     setItemId('')
     setItemBusca('')
     setLote('')
     setCaixas('')
     setUnidadesAvulsas('0')
+    setIsSaving(false)
   }
 
   const buscaSanitizada = sanitizeText(itemBusca, { maxLen: 80 }).toLowerCase()
@@ -277,8 +297,8 @@ export default function RegistrarPage() {
             <b>Total em unidades:</b> {totalUnidades}
           </p>
 
-          <button className="btn" onClick={handleSalvarMovimentacao} style={{ width: '100%' }}>
-            Salvar movimentação
+          <button className="btn" onClick={handleSalvarMovimentacao} disabled={isSaving} style={{ width: '100%' }}>
+            {isSaving ? 'Salvando...' : 'Salvar movimentação'}
           </button>
         </div>
       </div>

@@ -111,6 +111,7 @@ export default function ConferirPage() {
   }, [movId])
 
   async function confirmar() {
+    console.log('confirmar() chamada - role:', role)
     const { data: sessionData } = await supabase.auth.getSession()
     const userId = sessionData.session?.user?.id
 
@@ -167,9 +168,11 @@ export default function ConferirPage() {
       },
     ])
 
+    console.log('CONF INSERT RESULT - error:', errConf)
+
     if (errConf) {
       console.log('CONF ERROR:', errConf)
-      showAlert('Erro ao salvar conferência. Veja o console.', 'Alerta', 'alert')
+      showAlert('Erro ao salvar conferência: ' + errConf.message, 'Alerta', 'alert')
       return
     }
 
@@ -188,14 +191,14 @@ export default function ConferirPage() {
       showAlert(
         `Conferência salva! Status: ${novoStatus}.`,
         'Sucesso',
-        'confirm',
+        'success',
         () => router.push('/pendentes')
       )
     } else {
       showAlert(
         `Conferência salva! Status: ${novoStatus}. Você será redirecionado para a lista de pendentes.`,
         'Alerta',
-        'confirm',
+        'alert',
         () => router.push('/pendentes')
       )
     }

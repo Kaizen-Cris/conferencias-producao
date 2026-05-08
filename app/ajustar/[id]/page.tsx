@@ -38,7 +38,28 @@ export default function AjustarPage() {
   const [popupOpen, setPopupOpen] = useState(false)
   const [popupTitle, setPopupTitle] = useState('Sucesso')
   const [popupMessage, setPopupMessage] = useState('')
+  const [popupVariant, setPopupVariant] = useState<'success' | 'alert' | 'warning' | 'confirm'>('warning')
+  const [popupConfirmText, setPopupConfirmText] = useState('OK')
+  const [popupAction, setPopupAction] = useState<null | (() => void)>(null)
 
+  function showAlert(message: string, title = 'Alerta') {
+    setPopupTitle(title)
+    setPopupMessage(message)
+    setPopupVariant('alert')
+    setPopupConfirmText('OK')
+    setPopupAction(null)
+    setPopupOpen(true)
+  }
+
+  function showSuccess(message: string, title = 'Sucesso', action?: () => void) {
+    setPopupTitle(title)
+    setPopupMessage(message)
+    setPopupVariant('success')
+    setPopupConfirmText(action ? 'Continuar' : 'OK')
+    setPopupAction(action ? () => action : null)
+    setPopupOpen(true)
+  }
+  
 
   // campos de ajuste
   const [caixas, setCaixas] = useState('')
@@ -130,7 +151,7 @@ export default function AjustarPage() {
       const userId = sessionData.session?.user?.id
 
       if (!userId) {
-        setPopupMessage('Você precisa estar logado.')
+        showAlert('Você precisa estar logado.')
         setPopupOpen(true)
         return
       }
@@ -138,20 +159,20 @@ export default function AjustarPage() {
       if (!mov) return
 
       if (!motivo.trim()) {
-        setPopupMessage('Informe o motivo do ajuste (obrigatório).')
+        showAlert('Informe o motivo do ajuste (obrigatório).')
         setPopupOpen(true)
         return
       }
 
       const motivoSanitizado = sanitizeText(motivo, { maxLen: 200 })
       if (!motivoSanitizado) {
-        setPopupMessage('Informe o motivo do ajuste (obrigatório).')
+        showAlert('Informe o motivo do ajuste (obrigatório).')
         setPopupOpen(true)
         return
       }
 
       if (totalUnidades <= 0) {
-        setPopupMessage('O total em unidades deve ser maior que zero.')
+        showAlert('O total em unidades deve ser maior que zero.')
         setPopupOpen(true)
         return
       }
@@ -173,7 +194,7 @@ export default function AjustarPage() {
 
       if (errAjuste) {
         console.log('AJUSTE ERROR:', errAjuste)
-        setPopupMessage('Erro ao salvar ajuste. Veja o console.')
+        showAlert('Erro ao salvar ajuste. Veja o console.')
         setPopupOpen(true)
         return
       }
@@ -189,16 +210,20 @@ export default function AjustarPage() {
         })
         .eq('id', mov.id)
 
+      console.log('UPDATE MOV RESULT - error:', errMov)
+
       if (errMov) {
         console.log('UPDATE MOV ERROR:', errMov)
-        setPopupMessage('Erro ao atualizar movimentação. Veja o console.')
+        showAlert('Erro ao atualizar movimentação. Veja o console.')
         setPopupOpen(true)
         return
       }
 
-      setPopupMessage('Ajuste salvo! Status: RECONFERIR')
-      setPopupOpen(true)
-      router.push('/divergencias')
+      showSuccess(
+        'Ajuste salvo! Status: RECONFERIR',
+        'Sucesso',
+        () => router.push('/divergencias')
+      )
     } finally {
       setSaving(false)
     }
@@ -251,8 +276,14 @@ export default function AjustarPage() {
         open={popupOpen}
         title={popupTitle}
         message={popupMessage}
-        variant="success"
-        onClose={() => setPopupOpen(false)}
+        variant={popupVariant}
+        confirmText={popupConfirmText}
+        showCancel={false}
+        onConfirm={popupAction ?? undefined}
+        onClose={() => {
+          setPopupOpen(false)
+          setPopupAction(null)
+        }}
       />
 
       <div className="container">
