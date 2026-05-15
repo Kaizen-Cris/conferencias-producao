@@ -45,6 +45,9 @@ export default function UsuariosPage() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [editRole, setEditRole] = useState<Role>('OPERADOR')
   const [savingRole, setSavingRole] = useState(false)
+  const [editingPasswordUserId, setEditingPasswordUserId] = useState<string | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [savingPassword, setSavingPassword] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -173,6 +176,42 @@ export default function UsuariosPage() {
     setUsers((prev) => prev.map((u) => (u.id === editingUserId ? { ...u, role: editRole } : u)))
     setEditingUserId(null)
     setMsg('Perfil atualizado com sucesso!')
+  }
+
+  async function handleSavePassword() {
+    if (!editingPasswordUserId || !newPassword.trim() || newPassword.length < 8) {
+      setMsg('Senha deve ter pelo menos 8 caracteres.')
+      return
+    }
+    setSavingPassword(true)
+    setMsg(null)
+
+    const token = await getTokenOrFail()
+    if (!token) {
+      setSavingPassword(false)
+      return
+    }
+
+    const res = await fetch('/api/admin/update-user-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ userId: editingPasswordUserId, password: newPassword }),
+    })
+
+    const json: any = await safeReadJson(res)
+    setSavingPassword(false)
+
+    if (!res.ok) {
+      if (json?.error) return setMsg(json.error)
+      return setMsg('Erro ao alterar senha.')
+    }
+
+    setEditingPasswordUserId(null)
+    setNewPassword('')
+    setMsg('Senha alterada com sucesso!')
   }
 
   async function toggleUser(userId: string, nextDisabled: boolean) {
@@ -389,44 +428,87 @@ export default function UsuariosPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {role === 'ADMIN' && (
-                    editingUserId === u.id ? (
-                      <>
-                        <button
-                          type="button"
-                          className="uBtn uBtnPrimary"
-                          onClick={handleSaveRole}
-                          disabled={savingRole}
-                        >
-                          {savingRole ? 'Salvando...' : 'Salvar'}
-                        </button>
-                        <button
-                          type="button"
-                          className="uBtn uBtnGhost"
-                          onClick={() => setEditingUserId(null)}
-                          disabled={savingRole}
-                        >
-                          Cancelar
-                        </button>
-                      </>
-                    ) : (
+                <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
+                  {role === 'ADMIN' && editingPasswordUserId === u.id ? (
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Nova senha"
+                        style={{ width: 120, fontSize: 12, padding: '4px 8px' }}
+                      />
                       <button
                         type="button"
-                        className="uBtn"
-                        onClick={() => handleEditRole(u.id)}
+                        className="uBtn uBtnPrimary"
+                        onClick={handleSavePassword}
+                        disabled={savingPassword}
+                        style={{ fontSize: 12, padding: '4px 8px' }}
                       >
-                        Editar perfil
+                        {savingPassword ? 'Salvando...' : 'Salvar'}
                       </button>
-                    )
+                      <button
+                        type="button"
+                        className="uBtn uBtnGhost"
+                        onClick={() => { setEditingPasswordUserId(null); setNewPassword('') }}
+                        disabled={savingPassword}
+                        style={{ fontSize: 12, padding: '4px 8px' }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {role === 'ADMIN' && (
+                        <>
+                          {editingUserId === u.id ? (
+                            <>
+                              <button
+                                type="button"
+                                className="uBtn uBtnPrimary"
+                                onClick={handleSaveRole}
+                                disabled={savingRole}
+                              >
+                                {savingRole ? 'Salvando...' : 'Salvar'}
+                              </button>
+                              <button
+                                type="button"
+                                className="uBtn uBtnGhost"
+                                onClick={() => setEditingUserId(null)}
+                                disabled={savingRole}
+                              >
+                                Cancelar
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                className="uBtn"
+                                onClick={() => handleEditRole(u.id)}
+                              >
+                                Editar perfil
+                              </button>
+                              <button
+                                type="button"
+                                className="uBtn"
+                                onClick={() => setEditingPasswordUserId(u.id)}
+                              >
+                                Alterar senha
+                              </button>
+                            </>
+                          )}
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        className={`uBtn ${u.is_disabled ? 'uBtnOk' : 'uBtnDanger'}`}
+                        onClick={() => toggleUser(u.id, !u.is_disabled)}
+                      >
+                        {u.is_disabled ? 'Ativar' : 'Desativar'}
+                      </button>
+                    </div>
                   )}
-                  <button
-                    type="button"
-                    className={`uBtn ${u.is_disabled ? 'uBtnOk' : 'uBtnDanger'}`}
-                    onClick={() => toggleUser(u.id, !u.is_disabled)}
-                  >
-                    {u.is_disabled ? 'Ativar' : 'Desativar'}
-                  </button>
                 </div>
               </div>
             ))}
