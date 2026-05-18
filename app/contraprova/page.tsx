@@ -107,23 +107,11 @@ export default function ContraprovaPage() {
     const agora = new Date()
     let filtradas = [...contraprovas]
 
-    if (busca.trim()) {
-      const buscaSanitizada = sanitizeText(busca, { maxLen: 80 }).toLowerCase()
-      filtradas = filtradas.filter(c => 
-        c.produto.toLowerCase().includes(buscaSanitizada) ||
-        c.lote.toLowerCase().includes(buscaSanitizada)
-      )
-    }
-
     if (!mostrarVencidas) {
       filtradas = filtradas.filter(c => {
         const vencimento = new Date(c.data_vencimento)
         return vencimento >= agora
       })
-    }
-
-    if (!mostrarExcluidos) {
-      filtradas = filtradas.filter(c => (c.status || '').toUpperCase() !== 'EXCLUIDO')
     }
 
     setContraprovasFiltradas(filtradas)
@@ -132,11 +120,23 @@ export default function ContraprovaPage() {
   async function carregarContraprovas() {
     if (!role) return
 
-    const { data, error } = await supabase
+    let q = supabase
       .from('contraprovas')
       .select('id,produto,lote,data_retirada,data_vencimento,criado_em,criado_por,status')
+
+    if (!mostrarExcluidos) {
+      q = q.neq('status', 'EXCLUIDO')
+    }
+
+    if (busca.trim()) {
+      const b = sanitizeText(busca, { maxLen: 80 })
+      q = q.or(`produto.ilike.%${b}%,lote.ilike.%${b}%`)
+    }
+
+    const { data, error } = await q
       .order('data_retirada', { ascending: false })
       .order('criado_em', { ascending: false })
+      .limit(500)
 
     if (error) {
       console.log('ERRO AO CARREGAR CONTRA PROVAS:', error)
@@ -149,7 +149,7 @@ export default function ContraprovaPage() {
 
   useEffect(() => {
     carregarContraprovas()
-  }, [role, aplicarFiltros])
+  }, [role, mostrarExcluidos])
 
   useEffect(() => {
     aplicarFiltros()
@@ -396,7 +396,7 @@ export default function ContraprovaPage() {
       return
     }
 
-    const { error } = await supabase.from('contraprovas').insert([
+    const { error, data: insertedData } = await supabase.from('contraprovas').insert([
       {
         produto: itemSelecionado.nome,
         lote: lote.trim(),
@@ -405,7 +405,7 @@ export default function ContraprovaPage() {
         criado_por: userName,
         status: null,
       },
-    ])
+    ]).select()
 
     if (error) {
       console.log('INSERT ERROR:', error)
@@ -415,23 +415,17 @@ export default function ContraprovaPage() {
 
     showAlert('Contraprova salva com sucesso!', 'Sucesso')
 
+    if (insertedData && insertedData.length > 0) {
+      setContraprovas(prev => [insertedData[0] as ContraprovaRow, ...prev])
+      aplicarFiltros()
+    }
+
     // Reset form
     setItemId('')
     setItemBusca('')
     setLote('')
     setDataRetirada(null)
     setDataVencimento(null)
-
-    // Refresh data
-    const { data: refreshData, error: refreshError } = await supabase
-      .from('contraprovas')
-      .select('id,produto,lote,data_retirada,data_vencimento,criado_em,criado_por')
-      .order('criado_em', { ascending: false })
-
-    if (!refreshError) {
-      setContraprovas(refreshData as ContraprovaRow[] ?? [])
-      aplicarFiltros()
-    }
   }
 
   async function handleImportarExcel(file: File) {
@@ -504,13 +498,7 @@ export default function ContraprovaPage() {
       }
 
       if (salvos > 0) {
-        const { data: refreshData } = await supabase
-          .from('contraprovas')
-          .select('id,produto,lote,data_retirada,data_vencimento,criado_em,criado_por,status')
-.order('data_retirada', { ascending: false })
-
-        setContraprovas(refreshData as ContraprovaRow[] ?? [])
-        aplicarFiltros()
+        await carregarContraprovas()
       }
 
       showAlert(`Importação concluída: ${salvos} registros salvos, ${erros} erros.`)

@@ -53,7 +53,7 @@ export async function GET(req: Request) {
     while (true) {
       const { data, error } = await admin
         .from('movimentacoes')
-        .select('*')
+        .select('id,item,lote,qtd_informada,caixas,qtd_por_caixa,unidades_avulsas,status,criado_por,criado_em')
         .order('criado_em', { ascending: true })
         .range(from, from + batchSize - 1)
 

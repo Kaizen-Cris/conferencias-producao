@@ -32,23 +32,24 @@ export default function DivergenciasPage() {
   async function carregar() {
     setLoading(true)
 
-    const { data, error } = await supabase
+    let q = supabase
       .from('movimentacoes')
       .select('id,item,lote,qtd_informada,status,criado_em')
       .eq('status', 'DIVERGENTE')
+
+    if (busca.trim()) {
+      const b = busca.trim()
+      q = q.or(`item.ilike.%${b}%,lote.ilike.%${b}%`)
+    }
+
+    const { data, error } = await q
       .order('criado_em', { ascending: false })
+      .limit(500)
 
     console.log('DIVERGENCIAS DATA:', data)
     console.log('DIVERGENCIAS ERROR:', error)
 
-    let rows = ((data as Mov[]) ?? [])
-
-    if (busca.trim()) {
-      const b = busca.trim().toLowerCase()
-      rows = rows.filter((m) => `${m.item} ${m.lote}`.toLowerCase().includes(b))
-    }
-
-    setLista(rows)
+    setLista(((data as Mov[]) ?? []))
     setLoading(false)
   }
 
@@ -65,7 +66,13 @@ export default function DivergenciasPage() {
     }
 
     init()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (role) carregar()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busca])
 
   if (authLoading) {
       return (

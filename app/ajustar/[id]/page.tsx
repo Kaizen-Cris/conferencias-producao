@@ -99,17 +99,7 @@ export default function AjustarPage() {
     if (m) {
       setCaixas(String(m.caixas ?? ''))
       setAvulsas(String(m.unidades_avulsas ?? 0))
-
-      const { data: itemData } = await supabase
-        .from('itens')
-        .select('qtd_por_caixa')
-        .eq('nome', m.item)
-        .eq('ativo', true)
-        .single()
-
-      if (itemData) {
-        setQtdPorCaixaItem(itemData.qtd_por_caixa)
-      }
+      setQtdPorCaixaItem(m.qtd_por_caixa)
     }
 
     setLoading(false)

@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { getMyRole } from '../../lib/auth'
-import { removeAccents } from '../../lib/sanitize'
 import Menu from '../../components/menu'
 import StatusBadge from '../../components/statusbadge'
 import Popup from '../../components/popup'
@@ -65,31 +64,28 @@ export default function HistoricoClient() {
 
     if (statusFiltro !== 'TODOS') q = q.eq('status', statusFiltro)
 
+    if (!mostrarExcluidos) {
+      q = q.neq('status', 'EXCLUIDO')
+    }
+
     if (diaFiltro) {
       const { startISO, endISO } = brDayToUtcRange(diaFiltro)
       q = q.gte('criado_em', startISO).lt('criado_em', endISO)
     }
 
-    const { data } = await q
-    let rows = ((data as Mov[]) ?? [])
-
-    if (!mostrarExcluidos) {
-      rows = rows.filter((m) => (m.status || '').toUpperCase() !== 'EXCLUIDO')
+    if (busca.trim()) {
+      const b = busca.trim()
+      q = q.or(`item.ilike.%${b}%,lote.ilike.%${b}%`)
     }
 
-    setLista(rows)
+    const { data } = await q
+    setLista(((data as Mov[]) ?? []))
     setLoading(false)
   }
 
   const listaFiltrada = useMemo(() => {
-    if (!busca.trim()) return lista
-
-    const buscaSemAcento = removeAccents(busca.trim()).toLowerCase()
-    return lista.filter((m) => 
-      removeAccents(m.item).toLowerCase().includes(buscaSemAcento) ||
-      removeAccents(m.lote).toLowerCase().includes(buscaSemAcento)
-    )
-  }, [busca, lista])
+    return lista
+  }, [lista])
 
   function showAlert(message: string, title = 'Alerta') {
     setPopupTitle(title)
@@ -181,6 +177,11 @@ export default function HistoricoClient() {
     if (role === 'OPERADOR' || role === 'ADMIN' || role === 'CONFERENTE' || role === 'SUPERVISOR') carregar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, statusFiltro, diaFiltro, mostrarExcluidos])
+
+  useEffect(() => {
+    if (role) carregar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busca])
 
   if (authLoading) {
     return (

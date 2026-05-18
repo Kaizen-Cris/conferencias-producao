@@ -105,39 +105,37 @@ const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
   }, [router])
 
   const reclamacoesFiltradas = useMemo(() => {
-    let resultado = reclamacoes
-
-    if (mostrarPendentes) {
-      resultado = resultado.filter(c => c.status === 'EM ANÁLISE' || c.status === 'A ENVIAR')
-    } else if (mostrarEnviados) {
-      resultado = resultado.filter(c => c.status === 'ENVIADA' || c.status === 'ENTREGUE')
-    } else if (mostrarExcluidos) {
-      resultado = resultado.filter(c => c.status === 'EXCLUIDO')
-    } else {
-      resultado = []
-    }
-
-    if (busca.trim()) {
-      const buscaSemAcento = removeAccents(sanitizeText(busca, { maxLen: 80 })).toLowerCase()
-      resultado = resultado.filter(c => 
-        removeAccents(c.cliente || '').toLowerCase().includes(buscaSemAcento) ||
-        removeAccents(c.produto).toLowerCase().includes(buscaSemAcento) ||
-        removeAccents(c.lote).toLowerCase().includes(buscaSemAcento) ||
-        removeAccents(c.descricao).toLowerCase().includes(buscaSemAcento) ||
-        removeAccents(c.codigo_rastreio || '').toLowerCase().includes(buscaSemAcento)
-      )
-    }
-
-    return resultado
-  }, [busca, mostrarPendentes, mostrarEnviados, mostrarExcluidos, reclamacoes])
+    return reclamacoes
+  }, [reclamacoes])
 
   async function carregarReclamacoes() {
     if (!role) return
 
-    const { data, error } = await supabase
+    let q = supabase
       .from('reclamacoes')
       .select('id,cliente,produto,lote,descricao,codigo_rastreio,status,criado_em,criado_por')
+
+    if (mostrarPendentes) {
+      q = q.in('status', ['EM ANÁLISE', 'A ENVIAR'])
+    } else if (mostrarEnviados) {
+      q = q.in('status', ['ENVIADA', 'ENTREGUE'])
+    } else if (mostrarExcluidos) {
+      q = q.eq('status', 'EXCLUIDO')
+    } else {
+      setReclamacoes([])
+      return
+    }
+
+    if (busca.trim()) {
+      const b = sanitizeText(busca, { maxLen: 80 })
+      q = q.or(
+        `cliente.ilike.%${b}%,produto.ilike.%${b}%,lote.ilike.%${b}%,descricao.ilike.%${b}%,codigo_rastreio.ilike.%${b}%`
+      )
+    }
+
+    const { data, error } = await q
       .order('criado_em', { ascending: false })
+      .limit(500)
 
     if (error) {
       console.log('ERRO AO CARREGAR RECLAMAÇÕES:', error)
@@ -149,7 +147,7 @@ const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
 
   useEffect(() => {
     carregarReclamacoes()
-  }, [role])
+  }, [role, mostrarPendentes, mostrarEnviados, mostrarExcluidos])
 
   useEffect(() => {
     async function carregarItens() {
@@ -311,17 +309,20 @@ const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
       return
     }
 
-    const { error } = await supabase.from('reclamacoes').insert([
-      {
-        cliente: cliente.trim(),
-        produto: itemSelecionado.nome,
-        lote: lote.trim(),
-        descricao: descricao.trim(),
-        codigo_rastreio: codigoRastreio.trim() || null,
-        status: status,
-        criado_por: userName,
-      },
-    ])
+    const { error, data: insertedData } = await supabase
+      .from('reclamacoes')
+      .insert([
+        {
+          cliente: cliente.trim(),
+          produto: itemSelecionado.nome,
+          lote: lote.trim(),
+          descricao: descricao.trim(),
+          codigo_rastreio: codigoRastreio.trim() || null,
+          status: status,
+          criado_por: userName,
+        },
+      ])
+      .select()
 
     if (error) {
       console.log('INSERT ERROR:', error)
@@ -331,6 +332,10 @@ const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
 
     showAlert('Reclamação salva com sucesso!', 'Sucesso')
 
+    if (insertedData && insertedData.length > 0) {
+      setReclamacoes(prev => [insertedData[0] as ReclamacaoRow, ...prev])
+    }
+
     setCliente('')
     setItemId('')
     setItemBusca('')
@@ -338,15 +343,6 @@ const [reclamacoes, setReclamacoes] = useState<ReclamacaoRow[]>([])
     setDescricao('')
     setCodigoRastreio('')
     setStatus('EM ANÁLISE')
-
-    const { data: refreshData, error: refreshError } = await supabase
-      .from('reclamacoes')
-      .select('id,cliente,produto,lote,descricao,codigo_rastreio,status,criado_em,criado_por')
-      .order('criado_em', { ascending: false })
-
-    if (!refreshError) {
-      setReclamacoes(refreshData as ReclamacaoRow[] ?? [])
-    }
   }
 
   function getStatusColor(status: string) {
